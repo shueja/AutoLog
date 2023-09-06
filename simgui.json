@@ -15,9 +15,44 @@
     }
   },
   "NetworkTables": {
+    "retained": {
+      "Robot": {
+        "m_internals": {
+          "0asdfghjklqwertyuiopzxcvbnm,qwertyuio": {
+            "open": true
+          },
+          "1": {
+            "open": true
+          },
+          "12": {
+            "open": true
+          },
+          "open": true
+        },
+        "open": true
+      }
+    },
     "transitory": {
       "Robot": {
         "field": {
+          "open": true
+        },
+        "m_internals": {
+          "0asdfghjklqwertyuiopzxcvbnm,qwertyuio": {
+            "open": true
+          },
+          "11asdfghjklqwertyuiopzxcvbnm,qwertyuio": {
+            "open": true
+          },
+          "12asdfghjklqwertyuiopzxcvbnm,qwertyuio": {
+            "open": true
+          },
+          "13asdfghjklqwertyuiopzxcvbnm,qwertyuio": {
+            "open": true
+          },
+          "14asdfghjklqwertyuiopzxcvbnm,qwertyuio": {
+            "open": true
+          },
           "open": true
         },
         "open": true

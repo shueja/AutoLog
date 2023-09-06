@@ -1,11 +1,25 @@
+
+buildscript {
+    repositories {
+        maven {
+            url = 'https://frcmaven.wpi.edu/artifactory/ex-mvn'
+        }
+    }
+    dependencies {
+        classpath 'com.hubspot.jinjava:jinjava:2.7.1'
+    }
+}
+plugins {
+    id "java"
+}
 import groovy.json.JsonSlurper;
 import com.hubspot.jinjava.Jinjava;
 import com.hubspot.jinjava.JinjavaConfig;
 
-def ntcoreTypesInputFile = file("generate/types.json")
-def ntcoreJavaTypesInputDir = file("src/generate/java")
-def ntcoreJavaTypesOutputDir = file("$buildDir/generated/main/java/edu/wpi/first/networktables")
 
+def ntcoreTypesInputFile = file("generate/types.json")
+def ntcoreJavaTypesInputDir = file("generate/java")
+def ntcoreJavaTypesOutputDir = file("generate/out")
 task ntcoreGenerateJavaTypes() {
     description = "Generates ntcore Java type classes"
     group = "WPILib"
@@ -27,23 +41,11 @@ task ntcoreGenerateJavaTypes() {
         ntcoreJavaTypesInputDir.listFiles().each { File file ->
             def template = file.text
             def outfn = file.name.substring(0, file.name.length() - 6)
-            if (file.name.startsWith("NetworkTable") || file.name.startsWith("Generic")) {
+            if (file.name.startsWith("NTLogger") || file.name.startsWith("DataLogger")) {
                 def replacements = new HashMap<String,?>()
                 replacements.put("types", jsonTypes)
                 def output = jinjava.render(template, replacements)
                 new File(ntcoreJavaTypesOutputDir, outfn).write(output)
-            } else {
-                jsonTypes.each { Map<String,?> replacements ->
-                    def output = jinjava.render(template, replacements)
-                    def typename = replacements.get("TypeName")
-                    File outfile
-                    if (outfn == "Timestamped.java") {
-                        outfile = new File(ntcoreJavaTypesOutputDir, "Timestamped${typename}.java")
-                    } else {
-                        outfile = new File(ntcoreJavaTypesOutputDir, "${typename}${outfn}")
-                    }
-                    outfile.write(output)
-                }
             }
         }
     }

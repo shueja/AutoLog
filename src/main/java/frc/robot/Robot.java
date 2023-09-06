@@ -4,25 +4,16 @@
 
 package frc.robot;
 
+import java.util.ArrayList;
+
 import autolog.AutoLog;
 import autolog.Logged;
-import autolog.AutoLog.AL.BothLog;
-import autolog.AutoLog.AL.NTLog;
 import edu.wpi.first.math.filter.LinearFilter;
-import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.networktables.NetworkTableInstance;
-import edu.wpi.first.util.WPIUtilJNI;
-import edu.wpi.first.wpilibj.DataLogManager;
-import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.event.BooleanEvent;
-import edu.wpi.first.wpilibj.event.EventLoop;
-import edu.wpi.first.wpilibj.smartdashboard.Field2d;
-import edu.wpi.first.wpilibj2.command.button.Trigger;
 import io.github.oblarg.oblog.Loggable;
 import io.github.oblarg.oblog.Logger;
-import io.github.oblarg.oblog.annotations.Log;
 
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
@@ -32,18 +23,14 @@ import io.github.oblarg.oblog.annotations.Log;
  */
 public class Robot extends TimedRobot implements Logged, Loggable {
 
-  @Log
-  @NTLog
-  public int number = 0;
-
-  double totaltime;
   int samples;
-
-  public Translation2d m_translation = new Translation2d(0, 1);
-  //Internal m_internal = new Internal();
-  private GenericHID hid = new GenericHID(0);
-  private EventLoop loop = new EventLoop();
+  boolean useOblog = false;
+  boolean dataLog = true;
+  ArrayList<Internal> m_internals = new ArrayList<>(
+  );
   private LinearFilter filter = LinearFilter.movingAverage(50);
+  double totalOfAvgs = 0;
+  double avgsTaken = 0;
   
   /**
    * This function is run when the robot is first started up and should be used for any
@@ -51,28 +38,46 @@ public class Robot extends TimedRobot implements Logged, Loggable {
    */
   @Override
   public void robotInit() {
+    for (int i = 0; i < 100; i++) {
+      m_internals.add(new Internal(i + ""));
+    }
     //DataLogManager.start();
     NetworkTableInstance.getDefault().getTopic("name").getGenericEntry();
-    Logger.configureLoggingAndConfig(this, false);
-    //AutoLog.setupLoggableLogging(this, "Robot", true);
-    //new BooleanEvent(loop, ()->hid.getRawButtonPressed(1)).rising().ifHigh(()->number++);
+    if (useOblog) {
+      Logger.configureLoggingAndConfig(this, false);
+    } else {
+      AutoLog.setupLoggableLogging(this, "Robot", true);
+    }
   }
-
   @Override
   public void robotPeriodic() {
     var timeBefore = Timer.getFPGATimestamp() * 1e6;
-    //AutoLog.update();
-    Logger.updateEntries();
+    if (useOblog) {
+      Logger.updateEntries();
+    } else {
+      if (dataLog) {
+        AutoLog.updateDataLog();
+      } else {
+        AutoLog.updateNT();
+      }
+
+    }
     var timeAfter = Timer.getFPGATimestamp() * 1e6;
     samples++;
     double avg = filter.calculate(timeAfter-timeBefore);
-    if (samples % 1000 == 0) {
+    if (samples % 500 == 0 && samples < (500 * 8) + 50) {
       System.out.println(avg);
+      totalOfAvgs += avg;
+      avgsTaken ++;
     }
-
-
-    //loop.poll();
+    if (samples == 500 * 8) {
+      System.out.println("Final Result: Oblog:" + useOblog + " DataLog:" + dataLog);
+      System.out.println(totalOfAvgs/avgsTaken);
+      
+    }
+    m_internals.forEach(Internal::update);
   }
+
   @Override
   public void autonomousInit() {}
 

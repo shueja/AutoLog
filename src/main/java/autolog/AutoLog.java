@@ -4,29 +4,29 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Supplier;
 
+import autolog.generate.out.NTLogger;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.networktables.NTSendable;
-import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 import edu.wpi.first.util.sendable.Sendable;
+import autolog.generate.out.DataLogger;
 
 public class AutoLog {
 
     private static final Collection<Runnable> smartdashboardRunnables = new LinkedHashSet<>();
-
+    static MethodHandles.Lookup lookup = MethodHandles.lookup();
 
     private static String camelToNormal(String camelCase) {
         StringBuilder sb = new StringBuilder();
@@ -165,6 +165,7 @@ public class AutoLog {
     }
 
     private static Supplier<?> getSupplier(Field field, Logged loggable) {
+        field.setAccessible(true);
         return () -> {
             try {
                 return field.get(loggable);
@@ -176,6 +177,35 @@ public class AutoLog {
     }
 
     private static Supplier<?> getSupplier(Method method, Logged loggable) {
+        // try {
+        //     MethodHandle handle = lookup.unreflect(method);
+        //     CallSite callSite = LambdaMetafactory.metafactory(
+        //     // method handle lookup
+        //     lookup,
+        //     // name of the method defined in the target functional interface
+        //     "get",
+        //     // type to be implemented and captured objects
+        //     // in this case the String instance to be trimmed is captured
+        //     MethodType.methodType(Supplier.class, loggable.getClass()),
+        //     // type erasure, Supplier will return an Object
+        //     MethodType.methodType(Object.class),
+        //     // method handle to transform
+        //     handle,
+        //     // Supplier method real signature (reified)
+        //     // trim accepts no parameters and returns String
+        //     MethodType.methodType(method.getReturnType()));
+        //         try{
+        //             Supplier<?> result = (Supplier<?>) callSite.getTarget().bindTo(loggable).invoke();
+        //             System.out.println(result);
+        //             return result;
+        //         } catch (Throwable t){
+        //             t.printStackTrace();
+        //             return ()->null;
+        //         }
+        // } catch (Exception e) {
+        //     e.printStackTrace();
+        //     return ()->null;
+        // }
         return () -> {
             try {
                 return method.invoke(loggable);
@@ -213,7 +243,8 @@ public class AutoLog {
                 if (oneShot) {
                     NTLogger.put(path, (long) (Integer) supplier.get());
                 } else {
-                    NTLogger.addInteger(path, () -> (long) (Integer) supplier.get());
+
+                    NTLogger.addInteger(path, () -> (long) (Integer) (supplier.get()));
                 }
                 break;
             case DoubleArray:
@@ -244,13 +275,13 @@ public class AutoLog {
                     NTLogger.addIntegerArray(path, () -> (long[]) supplier.get());
                 }
                 break;
-            case Translation2d:
-                if (oneShot) {
-                    NTLogger.put(path, (Translation2d) supplier.get());
-                } else {
-                    NTLogger.addTranslation2d(path, () -> (Translation2d) supplier.get());
-                }
-                break;
+            // case Translation2d:
+            //     if (oneShot) {
+            //         NTLogger.put(path, (Translation2d) supplier.get());
+            //     } else {
+            //         NTLogger.addTranslation2d(path, () -> (Translation2d) supplier.get());
+            //     }
+            //     break;
             default:
                 throw new IllegalArgumentException("Invalid data type");
         }
@@ -314,13 +345,13 @@ public class AutoLog {
                     DataLogger.addIntegerArray(path, () -> (long[]) supplier.get());
                 }
                 break;
-            case Translation2d:
-            if (oneShot) {
-                DataLogger.putTranslation2d(path, (Translation2d) supplier.get());
-            } else {
-                DataLogger.addTranslation2d(path, () -> (Translation2d) supplier.get());
-            }
-            break;
+            // case Translation2d:
+            // if (oneShot) {
+            //     DataLogger.putTranslation2d(path, (Translation2d) supplier.get());
+            // } else {
+            //     DataLogger.addTranslation2d(path, () -> (Translation2d) supplier.get());
+            // }
+            // break;
             case Sendable:
                 DataLogger.addSendable((Sendable) supplier.get(), path);
                 break;
@@ -334,9 +365,9 @@ public class AutoLog {
     public static void setupLoggableLogging(Logged loggable, String rootPath, boolean createDataLog) {
         String ss_name = rootPath;
         for (Field field : loggable.getClass().getDeclaredFields()) {
-            System.out.println(loggable.getClass() + " " + field.getType());
+            field.setAccessible(true);
             if (Logged.class.isAssignableFrom(field.getType())) {
-                field.setAccessible(true);
+                
 
                 try {
                     AutoLog.setupLoggableLogging((Logged) field.get(loggable), ss_name + "/" + field.getName(), createDataLog);
@@ -346,7 +377,6 @@ public class AutoLog {
                 
             }
             if (field.getType().isArray()) {
-                List<Logged> toLogs = new ArrayList<>();
                 try {
                   // Skip if primitive array
                   if (!Object.class.isAssignableFrom(
@@ -357,8 +387,8 @@ public class AutoLog {
                   for (Object obj : (Object[]) field.get(loggable)) {
                     if (obj instanceof Logged) {
                         try {
-                            AutoLog.setupLoggableLogging((Logged) field.get(loggable), ss_name + "/" + field.getName() + "/" + obj.getClass().getSimpleName(), createDataLog);
-                        } catch (IllegalArgumentException | IllegalAccessException e) {
+                            AutoLog.setupLoggableLogging((Logged) obj, ss_name + "/" + field.getName() + "/" + obj.getClass().getSimpleName(), createDataLog);
+                        } catch (IllegalArgumentException e) {
                             DriverStation.reportWarning(field.getName() + " supllier is erroring", false);
                         }
                     }
@@ -369,14 +399,14 @@ public class AutoLog {
                 // Proceed on all valid elements
                 // Handle collections similarly
               } else if (Collection.class.isAssignableFrom(field.getType())) {
-                List<Logged> toLogs = new ArrayList<>();
                 try {
                   // Include all elements whose runtime class is Loggable
                   for (Object obj : (Collection) field.get(loggable)) {
+                    
                     if (obj instanceof Logged) {
                         try {
-                            AutoLog.setupLoggableLogging((Logged) field.get(loggable), ss_name + "/" + field.getName() + "/" + obj.getClass().getSimpleName(), createDataLog);
-                        } catch (IllegalArgumentException | IllegalAccessException e) {
+                            AutoLog.setupLoggableLogging((Logged) obj, ss_name + "/" + field.getName() + "/" + ((Logged) obj).getPath(), createDataLog);
+                        } catch (IllegalArgumentException e) {
                             DriverStation.reportWarning(field.getName() + " supllier is erroring", false);
                         }
                     }
@@ -389,7 +419,6 @@ public class AutoLog {
                 continue;
             }
 
-            String loggerPort = "";
             if ((
                 field.isAnnotationPresent(AL.DataLog.class) ||
                 field.isAnnotationPresent(AL.BothLog.class))
@@ -416,7 +445,6 @@ public class AutoLog {
                 } else {
                     dataLoggerHelper(getSupplier(field, loggable), type, path, oneShot);
                 }
-                loggerPort = "DataLog";
             }
             if (field.isAnnotationPresent(AL.NTLog.class) || field.isAnnotationPresent(AL.BothLog.class)) {
                 field.setAccessible(true);
@@ -439,12 +467,10 @@ public class AutoLog {
                 } else {
                     ntLoggerHelper(getSupplier(field, loggable), type, key, oneShot);
                 }
-                loggerPort = "SmartDashboard";
             }
         }
 
         for (Method method : loggable.getClass().getDeclaredMethods()) {
-            String loggerPort = "";
             if ((
                 method.isAnnotationPresent(AL.DataLog.class) ||
                 method.isAnnotationPresent(AL.BothLog.class))
@@ -463,14 +489,13 @@ public class AutoLog {
                     annotationPath = annotation.Path();
                     oneShot = annotation.once();
                 }
-                String name = methodNameFix(method.getName());
+                String name = method.getName(); //methodNameFix(method.getName());
                 String path = annotationPath.equals("") ? ss_name + "/" + name : annotationPath;
                 DataType type = DataType.fromClass(method.getReturnType());
                 if (method.getParameterCount() > 0) {
                     throw new IllegalArgumentException("Cannot have parameters on a DataLog method");
                 }
                 dataLoggerHelper(getSupplier(method, loggable), type, path, oneShot);
-                loggerPort = "DataLog";
             }
             if (method.isAnnotationPresent(AL.NTLog.class) || method.isAnnotationPresent(AL.BothLog.class)) {
                 method.setAccessible(true);
@@ -486,19 +511,24 @@ public class AutoLog {
                     annotationPath = annotation.Path();
                     oneShot = annotation.once();
                 }
-                String key = annotationPath.equals("") ? ss_name + "/" + methodNameFix(method.getName()) : annotationPath;
+                String key = annotationPath.equals("") ? ss_name + "/" + method.getName() : annotationPath;
                 DataType type = DataType.fromClass(method.getReturnType());
                 if (method.getParameterCount() > 0) {
                     throw new IllegalArgumentException("Cannot have parameters on a DataLog method");
                 }
                 ntLoggerHelper(getSupplier(method, loggable), type, key, oneShot);
-                loggerPort = "SmartDashboard";
             }
         }
     }
 
     public static void update() {
         NTLogger.update();
+        DataLogger.update();
+    }
+    public static void updateNT(){
+        NTLogger.update();
+    }
+    public static void updateDataLog(){
         DataLogger.update();
     }
 }
