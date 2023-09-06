@@ -1,0 +1,36 @@
+{
+  "NTProvider": {
+    "types": {
+      "/FMSInfo": "FMSInfo",
+      "/Robot/field/": "Field2d",
+      "/Shuffleboard/Robot/field": "Field2d",
+      "/SmartDashboard/Robot/field": "Field2d"
+    },
+    "windows": {
+      "/Robot/field/": {
+        "window": {
+          "visible": true
+        }
+      }
+    }
+  },
+  "NetworkTables": {
+    "transitory": {
+      "Robot": {
+        "field": {
+          "open": true
+        },
+        "open": true
+      },
+      "Shuffleboard": {
+        "Internal": {
+          "open": true
+        },
+        "Robot": {
+          "open": true
+        },
+        "open": true
+      }
+    }
+  }
+}

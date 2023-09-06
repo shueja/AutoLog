@@ -1,0 +1,51 @@
+import groovy.json.JsonSlurper;
+import com.hubspot.jinjava.Jinjava;
+import com.hubspot.jinjava.JinjavaConfig;
+
+def ntcoreTypesInputFile = file("generate/types.json")
+def ntcoreJavaTypesInputDir = file("src/generate/java")
+def ntcoreJavaTypesOutputDir = file("$buildDir/generated/main/java/edu/wpi/first/networktables")
+
+task ntcoreGenerateJavaTypes() {
+    description = "Generates ntcore Java type classes"
+    group = "WPILib"
+
+    inputs.file ntcoreTypesInputFile
+    inputs.dir ntcoreJavaTypesInputDir
+    outputs.dir ntcoreJavaTypesOutputDir
+
+    doLast {
+        def jsonSlurper = new JsonSlurper()
+        def jsonTypes = jsonSlurper.parse(ntcoreTypesInputFile)
+
+        ntcoreJavaTypesOutputDir.deleteDir()
+        ntcoreJavaTypesOutputDir.mkdirs()
+
+        def config = new JinjavaConfig()
+        def jinjava = new Jinjava(config)
+
+        ntcoreJavaTypesInputDir.listFiles().each { File file ->
+            def template = file.text
+            def outfn = file.name.substring(0, file.name.length() - 6)
+            if (file.name.startsWith("NetworkTable") || file.name.startsWith("Generic")) {
+                def replacements = new HashMap<String,?>()
+                replacements.put("types", jsonTypes)
+                def output = jinjava.render(template, replacements)
+                new File(ntcoreJavaTypesOutputDir, outfn).write(output)
+            } else {
+                jsonTypes.each { Map<String,?> replacements ->
+                    def output = jinjava.render(template, replacements)
+                    def typename = replacements.get("TypeName")
+                    File outfile
+                    if (outfn == "Timestamped.java") {
+                        outfile = new File(ntcoreJavaTypesOutputDir, "Timestamped${typename}.java")
+                    } else {
+                        outfile = new File(ntcoreJavaTypesOutputDir, "${typename}${outfn}")
+                    }
+                    outfile.write(output)
+                }
+            }
+        }
+    }
+}
+
