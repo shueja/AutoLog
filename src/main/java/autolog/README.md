@@ -1,4 +1,4 @@
-based on the logging framework by FRC 3173
+based on the logging framework by Oh Yes 10 FPS (https://github.com/oh-yes-0-fps/FRC2024Template/blob/swerve/src/main/java/com/igknighters/util/logging/AutoLog.java)
 
 BENCHMARKING
 
