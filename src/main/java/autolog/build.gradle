@@ -19,7 +19,7 @@ import com.hubspot.jinjava.JinjavaConfig;
 
 def ntcoreTypesInputFile = file("generate/types.json")
 def ntcoreJavaTypesInputDir = file("generate/java")
-def ntcoreJavaTypesOutputDir = file("generate/out")
+def ntcoreJavaTypesOutputDir = file("generate/output")
 task ntcoreGenerateJavaTypes() {
     description = "Generates ntcore Java type classes"
     group = "WPILib"
@@ -41,7 +41,10 @@ task ntcoreGenerateJavaTypes() {
         ntcoreJavaTypesInputDir.listFiles().each { File file ->
             def template = file.text
             def outfn = file.name.substring(0, file.name.length() - 6)
-            if (file.name.startsWith("NTLogger") || file.name.startsWith("DataLogger")) {
+            if (file.name.startsWith("NTLogger")
+                || file.name.startsWith("DataLogger")
+                || file.name.startsWith("GenericLogger")
+                || file.name.startsWith("DataType")) {
                 def replacements = new HashMap<String,?>()
                 replacements.put("types", jsonTypes)
                 def output = jinjava.render(template, replacements)

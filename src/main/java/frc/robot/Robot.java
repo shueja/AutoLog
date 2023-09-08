@@ -25,7 +25,7 @@ public class Robot extends TimedRobot implements Logged, Loggable {
 
   int samples;
   boolean useOblog = false;
-  boolean dataLog = true;
+  boolean dataLog = false;
   ArrayList<Internal> m_internals = new ArrayList<>(
   );
   private LinearFilter filter = LinearFilter.movingAverage(50);

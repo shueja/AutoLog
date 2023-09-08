@@ -14,14 +14,15 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.function.Supplier;
 
-import autolog.generate.out.NTLogger;
+import autolog.generate.output.DataLogger;
+import autolog.generate.output.DataType;
+import autolog.generate.output.NTLogger;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.networktables.NTSendable;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 import edu.wpi.first.util.sendable.Sendable;
-import autolog.generate.out.DataLogger;
 
 public class AutoLog {
 
@@ -94,75 +95,88 @@ public class AutoLog {
 
     }
 
-    private static enum DataType {
-        Double(Double.class), Boolean(Boolean.class), String(String.class), Integer(Integer.class),
-        DoubleArray(Double[].class), BooleanArray(Boolean[].class), StringArray(String[].class),
-        IntegerArray(Integer[].class), Sendable(Sendable.class), Translation2d(Translation2d.class);
+    // public static enum DataType {
+    //     Double(Double.class), Float(Float.class), Boolean(Boolean.class), String(String.class), Integer(Integer.class),
+    //     Raw(Byte[].class),
+    //     DoubleArray(Double[].class), FloatArray(Float[].class), BooleanArray(Boolean[].class), StringArray(String[].class),
+    //     IntegerArray(Integer[].class), Sendable(Sendable.class), Translation2d(Translation2d.class);
 
-        @SuppressWarnings("unused")
-        private final Class<?> cls;
+    //     @SuppressWarnings("unused")
+    //     private final Class<?> cls;
 
-        DataType(Class<?> cls) {
-            this.cls = cls;
-        }
+    //     DataType(Class<?> cls) {
+    //         this.cls = cls;
+    //     }
 
-        public static DataType fromClass(Class<?> clazz) throws IllegalArgumentException {
-            // if clazz has Sendable interace
-            for (Class<?> cls : clazz.getInterfaces()) {
-                if (cls.equals(Sendable.class) || cls.equals(NTSendable.class)) {
-                    return Sendable;
-                }
-            }
-            clazz = complexFromPrim(clazz);
-            if (clazz.equals(Double.class)) {
-                return Double;
-            } else if (clazz.equals(Boolean.class)) {
-                return Boolean;
-            } else if (clazz.equals(String.class)) {
-                return String;
-            } else if (clazz.equals(Integer.class)) {
-                return Integer;
-            } else if (clazz.equals(Double[].class)) {
-                return DoubleArray;
-            } else if (clazz.equals(Boolean[].class)) {
-                return BooleanArray;
-            } else if (clazz.equals(String[].class)) {
-                return StringArray;
-            } else if (clazz.equals(Integer[].class)) {
-                return IntegerArray;
-            } else if (clazz.equals(Translation2d.class)) {
-                return Translation2d;
-            } else if (Sendable.class.isAssignableFrom(clazz)) {
-                return Sendable;
-            } else {
-                throw new IllegalArgumentException("Invalid datatype");
-            }
-        }
+    //     public static DataType fromClass(Class<?> clazz) throws IllegalArgumentException {
+    //         // if clazz has Sendable interace
+    //         for (Class<?> cls : clazz.getInterfaces()) {
+    //             if (cls.equals(Sendable.class) || cls.equals(NTSendable.class)) {
+    //                 return Sendable;
+    //             }
+    //         }
+    //         clazz = complexFromPrim(clazz);
+    //         if (clazz.equals(Double.class)) {
+    //             return Double;
+    //         } else if (clazz.equals(Float.class)) {
+    //             return FloatArray;
+    //         } else if (clazz.equals(Boolean.class)) {
+    //             return Boolean;
+    //         } else if (clazz.equals(String.class)) {
+    //             return String;
+    //         } else if (clazz.equals(Integer.class)) {
+    //             return Integer;
+    //         } else if (clazz.equals(Byte[].class)) {
+    //             return Raw;
+    //         } else if (clazz.equals(Double[].class)) {
+    //             return DoubleArray;
+    //         } else if (clazz.equals(Float[].class)) {
+    //             return FloatArray;
+    //         } else if (clazz.equals(Boolean[].class)) {
+    //             return BooleanArray;
+    //         } else if (clazz.equals(String[].class)) {
+    //             return StringArray;
+    //         } else if (clazz.equals(Integer[].class)) {
+    //             return IntegerArray;
+    //         } else if (clazz.equals(Translation2d.class)) {
+    //             return Translation2d;
+    //         } else if (Sendable.class.isAssignableFrom(clazz)) {
+    //             return Sendable;
+    //         } else {
+    //             throw new IllegalArgumentException("Invalid datatype");
+    //         }
+    //     }
 
-        private static Class<?> complexFromPrim(Class<?> clazz) {
-            if (clazz.equals(double.class)) {
-                return Double.class;
-            } else if (clazz.equals(boolean.class)) {
-                return Boolean.class;
-            } else if (clazz.equals(String.class)) {
-                return String.class;
-            } else if (clazz.equals(int.class)) {
-                return Integer.class;
-            } else if (clazz.equals(double[].class)) {
-                return Double[].class;
-            } else if (clazz.equals(boolean[].class)) {
-                return Boolean[].class;
-            } else if (clazz.equals(String[].class)) {
-                return String[].class;
-            } else if (clazz.equals(int[].class)) {
-                return Integer[].class;
-            } else if (clazz.equals(Translation2d.class)) {
-                return Translation2d.class;
-            } else {
-                return clazz;
-            }
-        }
-    }
+    //     private static Class<?> complexFromPrim(Class<?> clazz) {
+    //         if (clazz.equals(double.class)) {
+    //             return Double.class;
+    //         } else if (clazz.equals(float.class)) {
+    //             return Float.class;
+    //         } else if (clazz.equals(boolean.class)) {
+    //             return Boolean.class;
+    //         } else if (clazz.equals(String.class)) {
+    //             return String.class;
+    //         } else if (clazz.equals(int.class)) {
+    //             return Integer.class;
+    //         } else if (clazz.equals(byte[].class)) {
+    //             return Byte[].class;
+    //         } else if (clazz.equals(double[].class)) {
+    //             return Double[].class;
+    //         } else if (clazz.equals(float[].class)) {
+    //             return Float[].class;
+    //         } else if (clazz.equals(boolean[].class)) {
+    //             return Boolean[].class;
+    //         } else if (clazz.equals(String[].class)) {
+    //             return String[].class;
+    //         } else if (clazz.equals(int[].class)) {
+    //             return Integer[].class;
+    //         } else if (clazz.equals(Translation2d.class)) {
+    //             return Translation2d.class;
+    //         } else {
+    //             return clazz;
+    //         }
+    //     }
+    // }
 
     private static Supplier<?> getSupplier(Field field, Logged loggable) {
         field.setAccessible(true);
@@ -216,155 +230,10 @@ public class AutoLog {
         };
     }
 
-    private static void ntLoggerHelper(Supplier<?> supplier, DataType type, String path, boolean oneShot) {
-        switch (type) {
-            case Double:
-                if (oneShot) {
-                    NTLogger.put(path, (Double) supplier.get());
-                } else {
-                    NTLogger.addDouble(path, () -> (Double) supplier.get());
-                }
-                break;
-            case Boolean:
-                if (oneShot) {
-                    NTLogger.put(path, (Boolean) supplier.get());
-                } else {
-                    NTLogger.addBoolean(path, () -> (Boolean) supplier.get());
-                }
-                break;
-            case String:
-                if (oneShot) {
-                    NTLogger.put(path, (String) supplier.get());
-                } else {
-                    NTLogger.addString(path, () -> (String) supplier.get());
-                }
-                break;
-            case Integer:
-                if (oneShot) {
-                    NTLogger.put(path, (long) (Integer) supplier.get());
-                } else {
-
-                    NTLogger.addInteger(path, () -> (long) (Integer) (supplier.get()));
-                }
-                break;
-            case DoubleArray:
-                if (oneShot) {
-                    NTLogger.put(path, (double[]) supplier.get());
-                } else {
-                    NTLogger.addDoubleArray(path, () -> (double[]) supplier.get());
-                }
-                break;
-            case BooleanArray:
-                if (oneShot) {
-                    NTLogger.put(path, (boolean[]) supplier.get());
-                } else {
-                    NTLogger.addBooleanArray(path, () -> (boolean[]) supplier.get());
-                }
-                break;
-            case StringArray:
-                if (oneShot) {
-                    NTLogger.put(path, (String[]) supplier.get());
-                } else {
-                    NTLogger.addStringArray(path, () -> (String[]) supplier.get());
-                }
-                break;
-            case IntegerArray:
-                if (oneShot) {
-                    NTLogger.put(path, (long[]) supplier.get());
-                } else {
-                    NTLogger.addIntegerArray(path, () -> (long[]) supplier.get());
-                }
-                break;
-            // case Translation2d:
-            //     if (oneShot) {
-            //         NTLogger.put(path, (Translation2d) supplier.get());
-            //     } else {
-            //         NTLogger.addTranslation2d(path, () -> (Translation2d) supplier.get());
-            //     }
-            //     break;
-            default:
-                throw new IllegalArgumentException("Invalid data type");
-        }
-    }
-
-    private static void dataLoggerHelper(Supplier<?> supplier, DataType type, String path, boolean oneShot) {
-        switch (type) {
-            case Double:
-                if (oneShot) {
-                    DataLogger.put(path, (Double) supplier.get());
-                } else {
-                    DataLogger.addDouble(path, () -> (Double) supplier.get());
-                }
-                break;
-            case Boolean:
-                if (oneShot) {
-                    DataLogger.put(path, (Boolean) supplier.get());
-                } else {
-                    DataLogger.addBoolean(path, () -> (Boolean) supplier.get());
-                }
-                break;
-            case String:
-                if (oneShot) {
-                    DataLogger.put(path, (String) supplier.get());
-                } else {
-                    DataLogger.addString(path, () -> (String) supplier.get());
-                }
-                break;
-            case Integer:
-                if (oneShot) {
-                    DataLogger.put(path, (long) (Integer) supplier.get());
-                } else {
-                    DataLogger.addInteger(path, () -> (long) (Integer) supplier.get());
-                }
-                break;
-            case DoubleArray:
-                if (oneShot) {
-                    DataLogger.put(path, (double[]) supplier.get());
-                } else {
-                    DataLogger.addDoubleArray(path, () -> (double[]) supplier.get());
-                }
-                break;
-            case BooleanArray:
-                if (oneShot) {
-                    DataLogger.put(path, (boolean[]) supplier.get());
-                } else {
-                    DataLogger.addBooleanArray(path, () -> (boolean[]) supplier.get());
-                }
-                break;
-            case StringArray:
-                if (oneShot) {
-                    DataLogger.put(path, (String[]) supplier.get());
-                } else {
-                    DataLogger.addStringArray(path, () -> (String[]) supplier.get());
-                }
-                break;
-            case IntegerArray:
-                if (oneShot) {
-                    DataLogger.put(path, (long[]) supplier.get());
-                } else {
-                    DataLogger.addIntegerArray(path, () -> (long[]) supplier.get());
-                }
-                break;
-            // case Translation2d:
-            // if (oneShot) {
-            //     DataLogger.putTranslation2d(path, (Translation2d) supplier.get());
-            // } else {
-            //     DataLogger.addTranslation2d(path, () -> (Translation2d) supplier.get());
-            // }
-            // break;
-            case Sendable:
-                DataLogger.addSendable((Sendable) supplier.get(), path);
-                break;
-            default:
-                throw new IllegalArgumentException("Invalid data type");
-        }
-    }
-
-    
-
     public static void setupLoggableLogging(Logged loggable, String rootPath, boolean createDataLog) {
         String ss_name = rootPath;
         for (Field field : loggable.getClass().getDeclaredFields()) {
+
             field.setAccessible(true);
             if (Logged.class.isAssignableFrom(field.getType())) {
                 
@@ -376,6 +245,7 @@ public class AutoLog {
                 }
                 
             }
+
             if (field.getType().isArray()) {
                 try {
                   // Skip if primitive array
@@ -415,20 +285,21 @@ public class AutoLog {
                   e.printStackTrace();
                 }
               }
-            if (field.getAnnotations().length == 0) {
+              if (field.getAnnotations().length == 0) {
                 continue;
             }
-
+            // setup the annotation.
+            String annotationPath;
+            boolean oneShot;
+            String name = field.getName();
             if ((
                 field.isAnnotationPresent(AL.DataLog.class) ||
                 field.isAnnotationPresent(AL.BothLog.class))
                  && createDataLog) {
                 DataLogger.startLog();
-                field.setAccessible(true);
-                String annotationPath;
-                boolean oneShot;
 
-                AL.NTLog annotation = field.getAnnotation(AL.NTLog.class);
+
+                AL.DataLog annotation = field.getAnnotation(AL.DataLog.class);
                 if (annotation == null) {
                     AL.BothLog logAnnotation = field.getAnnotation(AL.BothLog.class);
                     annotationPath = logAnnotation.Path();
@@ -437,19 +308,15 @@ public class AutoLog {
                     annotationPath = annotation.Path();
                     oneShot = annotation.once();
                 }
-                String name = field.getName();
-                String path = annotationPath.equals("") ? ss_name + "/" + name : annotationPath;
+                String key = annotationPath.equals("") ? ss_name + "/" + name : annotationPath;
                 DataType type = DataType.fromClass(field.getType());
                 if (type == DataType.Sendable) {
-                    NTLogger.addSendable((Sendable) getSupplier(field, loggable).get(), ss_name, name);
+                    DataLogger.addSendable(key, (Sendable) getSupplier(field, loggable).get());
                 } else {
-                    dataLoggerHelper(getSupplier(field, loggable), type, path, oneShot);
+                    DataLogger.helper(getSupplier(field, loggable), type, key, oneShot);
                 }
             }
             if (field.isAnnotationPresent(AL.NTLog.class) || field.isAnnotationPresent(AL.BothLog.class)) {
-                field.setAccessible(true);
-                String annotationPath;
-                boolean oneShot;
 
                 AL.NTLog annotation = field.getAnnotation(AL.NTLog.class);
                 if (annotation == null) {
@@ -463,9 +330,9 @@ public class AutoLog {
                 String key = annotationPath.equals("") ? ss_name + "/" + field.getName() : annotationPath;
                 DataType type = DataType.fromClass(field.getType());
                 if (type == DataType.Sendable) {
-                    SmartDashboard.putData(key, (Sendable) getSupplier(field, loggable).get());
+                    NTLogger.addSendable(key, (Sendable) getSupplier(field, loggable).get());
                 } else {
-                    ntLoggerHelper(getSupplier(field, loggable), type, key, oneShot);
+                    NTLogger.helper(getSupplier(field, loggable), type, key, oneShot);
                 }
             }
         }
@@ -495,7 +362,7 @@ public class AutoLog {
                 if (method.getParameterCount() > 0) {
                     throw new IllegalArgumentException("Cannot have parameters on a DataLog method");
                 }
-                dataLoggerHelper(getSupplier(method, loggable), type, path, oneShot);
+                DataLogger.helper(getSupplier(method, loggable), type, path, oneShot);
             }
             if (method.isAnnotationPresent(AL.NTLog.class) || method.isAnnotationPresent(AL.BothLog.class)) {
                 method.setAccessible(true);
@@ -516,7 +383,7 @@ public class AutoLog {
                 if (method.getParameterCount() > 0) {
                     throw new IllegalArgumentException("Cannot have parameters on a DataLog method");
                 }
-                ntLoggerHelper(getSupplier(method, loggable), type, key, oneShot);
+                NTLogger.helper(getSupplier(method, loggable), type, key, oneShot);
             }
         }
     }

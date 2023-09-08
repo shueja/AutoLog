@@ -1,4 +1,4 @@
-package autolog.generate.out;
+package autolog.generate.output;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
@@ -32,26 +32,9 @@ import autolog.logEntries.nt.Translation2dPublisher;
 import autolog.logEntries.nt.Translation3dEntry;
 import edu.wpi.first.wpilibj.Timer;
 
-public class NTLogger {
-    public interface NTRunnable extends LongConsumer {
-        void close();
-    }
-    private NTLogger() {}
+public class NTLogger extends GenericLogger {
+    private NTLogger() {super();}
 
-    private static NTRunnable field(LongConsumer run, Runnable close) {
-        return new NTRunnable() {
-            @Override
-            public void accept(long timestamp) {
-                run.accept(timestamp);
-            }
-            @Override
-            public void close() {
-                close.run();
-            }
-        };
-    }
-    private static final Map<String, NTRunnable> ntMap = new HashMap<>();
-    private static final Collection<SendableBuilder> sendables = new LinkedHashSet<>();
     private static final NetworkTableInstance table = NetworkTableInstance.getDefault();
 
     {%for t in types%}
@@ -73,7 +56,7 @@ public class NTLogger {
         {%else%}
         var publisher = topic.publish();
         {%endif%}
-        ntMap.put(entryName, field((timestamp)->publisher.set(valueSupplier.get(), timestamp), publisher::close));
+        map.put(entryName, field((timestamp)->publisher.set(valueSupplier.get(), timestamp), publisher::close));
     }
     {%endfor%}
 
@@ -84,34 +67,23 @@ public class NTLogger {
     //     publisher.set(value);
     //     publisher.close();
     // }
-
-
-    public static void addTranslation2d(String entryName, Supplier<Translation2d> valueSupplier) {
-        //ntMap.put(new Translation2dPublisher(table.getDoubleArrayTopic(entryName)), valueSupplier);
-    }
-
-    public static void addTranslation3d(String entryName, Supplier<Translation3d> valueSupplier) {
-        //ntMap.put(new Translation3dPublisher(table, entryName), valueSupplier);
-    }
-
-    public static void addRotation2d(String entryName, Supplier<Rotation2d> valueSupplier) {
-        //ntMap.put(new Rotation2dPublisher(table, entryName), valueSupplier);
-    }
-
-    public static void addRotation3d(String entryName, Supplier<Rotation3d> valueSupplier) {
-        //ntMap.put(new Rotation3dPublisher(table, entryName), valueSupplier);
-    }
-
-    public static void addPose2d(String entryName, Supplier<Pose2d> valueSupplier) {
-        //ntMap.put(new Pose2dEntry(table, entryName), valueSupplier);
-    }
-
-    public static void addPose3d(String entryName, Supplier<Pose3d> valueSupplier) {
-        //ntMap.put(new Pose3dPublisher(table, entryName), valueSupplier);
-    }
-
-    public static void addCustom(Publisher entry, Supplier<?> valueSupplier) {
-        //ntMap.put(entry, valueSupplier);
+    public static void helper(Supplier<?> supplier, DataType type, String path, boolean oneShot) {
+        switch (type) {
+            {%for t in types%}
+            case {{t.TypeName}}:
+                if (oneShot) {
+                    NTLogger.put(path, ({{t.java.ValueType}}) supplier.get());
+                } else {
+                    NTLogger.add{{t.TypeName}}(path, () -> ({{t.java.ValueType}}) supplier.get());
+                }
+                break;
+            {%endfor%}
+            case Sendable:
+                NTLogger.addSendable(path, (Sendable) supplier.get());
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid data type");
+        }
     }
 
     public static void addNetworkTable(NetworkTable table) {
@@ -124,30 +96,12 @@ public class NTLogger {
         //     .startEntryDataLog(table, table.getPath(), dlPath);
     }
 
-    public static void addSendable(Sendable sendable, String pathPrefix, String name) {
-        String prefix;
-        if (!pathPrefix.endsWith("/")) {
-            prefix = pathPrefix + "/" + name + "/";
-        } else {
-            prefix = pathPrefix + name + "/";
-        }
+    public static void addSendable(String path, Sendable sendable) {        
         var builder = new SendableBuilderImpl();
-        builder.setTable(table.getTable(prefix));
+        builder.setTable(table.getTable(path));
         sendable.initSendable(builder);
         builder.startListeners();
-        table.getTable(prefix).getEntry(".controllable").setBoolean(false);
+        table.getTable(path).getEntry(".controllable").setBoolean(false);
         sendables.add(builder);
-    }
-
-    public static void update() {
-        long timestamp = (long) (Timer.getFPGATimestamp() * 1e6);
-        for (Map.Entry<String, NTRunnable> entry : ntMap.entrySet()) {
-            var key = entry.getKey();
-            var val = entry.getValue();
-            //could do `key.kDatatype` and compare using that
-            //but supposedly this is comparable
-            val.accept(timestamp);
-        }
-        //sendables.forEach(SendableBuilder::update);
     }
 }

@@ -13,7 +13,7 @@ import java.util.function.LongConsumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
-import autolog.generate.out.NTLogger;
+import autolog.generate.output.NTLogger;
 import edu.wpi.first.networktables.NTSendableBuilder;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
@@ -35,6 +35,7 @@ import edu.wpi.first.util.function.BooleanConsumer;
 import edu.wpi.first.util.function.FloatConsumer;
 import edu.wpi.first.util.function.FloatSupplier;
 import edu.wpi.first.wpilibj.DataLogManager;
+import edu.wpi.first.wpilibj.Timer;
 
 public class DataLogSendableBuilder implements NTSendableBuilder {
     private static final DataLog log = DataLogManager.getLog();
@@ -189,41 +190,42 @@ public class DataLogSendableBuilder implements NTSendableBuilder {
 
     @Override
     public void update() {
+        long timestamp = (long) (Timer.getFPGATimestamp() * 1e6);
         for (Map.Entry<DataLogEntry, Supplier<?>> entry : dataLogMap.entrySet()) {
             var key = entry.getKey();
             var val = entry.getValue().get();
             if (key instanceof BooleanArrayLogEntry) {
-                ((BooleanArrayLogEntry) key).append((boolean[]) val);
+                ((BooleanArrayLogEntry) key).append((boolean[]) val, timestamp);
 
             } else if (key instanceof BooleanLogEntry) {
-                ((BooleanLogEntry) key).append((boolean) val);
+                ((BooleanLogEntry) key).append((boolean) val, timestamp);
 
             } else if (key instanceof DoubleArrayLogEntry) {
-                ((DoubleArrayLogEntry) key).append((double[]) val);
+                ((DoubleArrayLogEntry) key).append((double[]) val, timestamp);
 
             } else if (key instanceof DoubleLogEntry) {
-                ((DoubleLogEntry) key).append((double) val);
+                ((DoubleLogEntry) key).append((double) val, timestamp);
 
             } else if (key instanceof FloatArrayLogEntry) {
-                ((FloatArrayLogEntry) key).append((float[]) val);
+                ((FloatArrayLogEntry) key).append((float[]) val, timestamp);
 
             } else if (key instanceof FloatLogEntry) {
-                ((FloatLogEntry) key).append((float) val);
+                ((FloatLogEntry) key).append((float) val, timestamp);
 
             } else if (key instanceof IntegerArrayLogEntry) {
-                ((IntegerArrayLogEntry) key).append((long[]) val);
+                ((IntegerArrayLogEntry) key).append((long[]) val, timestamp);
 
             } else if (key instanceof IntegerLogEntry) {
-                ((IntegerLogEntry) key).append((long) val);
+                ((IntegerLogEntry) key).append((long) val, timestamp);
 
             } else if (key instanceof RawLogEntry) {
-                ((RawLogEntry) key).append((byte[]) val);
+                ((RawLogEntry) key).append((byte[]) val, timestamp);
 
             } else if (key instanceof StringArrayLogEntry) {
-                ((StringArrayLogEntry) key).append((String[]) val);
+                ((StringArrayLogEntry) key).append((String[]) val, timestamp);
 
             } else if (key instanceof StringLogEntry) {
-                ((StringLogEntry) key).append((String) val);
+                ((StringLogEntry) key).append((String) val, timestamp);
             }
         }
         for (Runnable updateTable : updateTables) {

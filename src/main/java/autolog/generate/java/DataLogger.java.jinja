@@ -1,4 +1,4 @@
-package autolog.generate.out;
+package autolog.generate.output;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
@@ -25,27 +25,8 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.function.Supplier;
 import edu.wpi.first.wpilibj.Timer;
-
-public class DataLogger {
-    public interface DataLogRunnable extends LongConsumer {
-        void close();
-    }
-    private DataLogger() {}
-
-    private static DataLogRunnable field(LongConsumer run, Runnable close) {
-        return new DataLogRunnable() {
-            @Override
-            public void accept(long timestamp) {
-                run.accept(timestamp);
-            }
-            @Override
-            public void close() {
-                close.run();
-            }
-        };
-    }
-    private static final Map<String, DataLogRunnable> datalogMap = new HashMap<>();
-    private static final Collection<DataLogSendableBuilder> sendables = new LinkedHashSet<>();
+public class DataLogger extends GenericLogger {
+    private DataLogger(){super();};
     private static DataLog log;
 
     {%for t in types%}
@@ -55,45 +36,28 @@ public class DataLogger {
 
     public static void add{{t.TypeName}}(String entryName, Supplier<{{t.java.Supplier}}> valueSupplier) {
         var entry = new {{t.TypeName}}LogEntry(log, entryName);
-        datalogMap.put(entryName, field((timestamp)->entry.append(valueSupplier.get(), timestamp), ()->{}));
+        map.put(entryName, field((timestamp)->entry.append(valueSupplier.get(), timestamp), ()->{}));
     }
     {%endfor%}
 
-    // public static void put(String entryName, Translation2d value) {
-    //     var topic = table.getDoubleArrayTopic(entryName);
-    //     topic.setRetained(true);
-    //     var publisher = new Translation2dPublisher(topic);
-    //     publisher.set(value);
-    //     publisher.close();
-    // }
 
-
-    public static void addTranslation2d(String entryName, Supplier<Translation2d> valueSupplier) {
-        //datalogMap.put(new Translation2dPublisher(table.getDoubleArrayTopic(entryName)), valueSupplier);
-    }
-
-    public static void addTranslation3d(String entryName, Supplier<Translation3d> valueSupplier) {
-        //datalogMap.put(new Translation3dPublisher(table, entryName), valueSupplier);
-    }
-
-    public static void addRotation2d(String entryName, Supplier<Rotation2d> valueSupplier) {
-        //datalogMap.put(new Rotation2dPublisher(table, entryName), valueSupplier);
-    }
-
-    public static void addRotation3d(String entryName, Supplier<Rotation3d> valueSupplier) {
-        //datalogMap.put(new Rotation3dPublisher(table, entryName), valueSupplier);
-    }
-
-    public static void addPose2d(String entryName, Supplier<Pose2d> valueSupplier) {
-        //datalogMap.put(new Pose2dEntry(table, entryName), valueSupplier);
-    }
-
-    public static void addPose3d(String entryName, Supplier<Pose3d> valueSupplier) {
-        //datalogMap.put(new Pose3dPublisher(table, entryName), valueSupplier);
-    }
-
-    public static void addCustom(Publisher entry, Supplier<?> valueSupplier) {
-        //datalogMap.put(entry, valueSupplier);
+    public static void helper(Supplier<?> supplier, DataType type, String path, boolean oneShot) {
+        switch (type) {
+            {%for t in types%}
+            case {{t.TypeName}}:
+                if (oneShot) {
+                    DataLogger.put(path, ({{t.java.ValueType}}) supplier.get());
+                } else {
+                    DataLogger.add{{t.TypeName}}(path, () -> ({{t.java.ValueType}}) supplier.get());
+                }
+                break;
+            {%endfor%}
+            case Sendable:
+                DataLogger.addSendable(path, (Sendable) supplier.get());
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid data type");
+        }
     }
 
     public static void addNetworkTable(NetworkTable table) {
@@ -106,32 +70,10 @@ public class DataLogger {
             .startEntryDataLog(log, table.getPath(), dlPath);
     }
 
-    public static void addSendable(Sendable sendable, String pathPrefix, String name) {
-        String prefix;
-        if (!pathPrefix.endsWith("/")) {
-            prefix = pathPrefix + "/" + name + "/";
-        } else {
-            prefix = pathPrefix + name + "/";
-        }
-        addSendable(sendable, prefix);
-    }
-
-    public static void addSendable(Sendable sendable, String path) {        
+    public static void addSendable(String path, Sendable sendable) {        
         var builder = new DataLogSendableBuilder(path);
         sendable.initSendable(builder);
         sendables.add(builder);
-    }
-
-    public static void update() {
-        long timestamp = (long) (Timer.getFPGATimestamp() * 1e6);
-        for (Map.Entry<String, DataLogRunnable> entry : datalogMap.entrySet()) {
-            var key = entry.getKey();
-            var val = entry.getValue();
-            //could do `key.kDatatype` and compare using that
-            //but supposedly this is comparable
-            val.accept(timestamp);
-        }
-        //sendables.forEach(SendableBuilder::update);
     }
 
     public static void startLog() {
