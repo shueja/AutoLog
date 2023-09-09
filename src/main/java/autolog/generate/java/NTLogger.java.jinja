@@ -1,11 +1,9 @@
 package autolog.generate.output;
 
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Pose3d;
-import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Rotation3d;
-import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.geometry.Translation3d;
+
+{%for t in geomTypes%}
+import edu.wpi.first.math.geometry.{{t.TypeName}};
+{%endfor%}
 import edu.wpi.first.networktables.NTSendable;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
@@ -24,21 +22,15 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import autolog.logEntries.nt.Pose2dEntry;
-import autolog.logEntries.nt.Pose3dEntry;
-import autolog.logEntries.nt.Rotation2dEntry;
-import autolog.logEntries.nt.Rotation3dEntry;
-import autolog.logEntries.nt.Translation2dPublisher;
-import autolog.logEntries.nt.Translation3dEntry;
 import edu.wpi.first.wpilibj.Timer;
 
 public class NTLogger extends GenericLogger {
-    private NTLogger() {super();}
+    public NTLogger() {super();}
 
-    private static final NetworkTableInstance table = NetworkTableInstance.getDefault();
+    private final NetworkTableInstance table = NetworkTableInstance.getDefault();
 
     {%for t in types%}
-    public static void put(String entryName, {{t.java.ValueType}} value) {
+    public void put(String entryName, {{t.java.ValueType}} value) {
         var topic = table.get{{t.TypeName}}Topic(entryName);
         {%if t.TypeName == 'Raw'%}
         var publisher = topic.publish("raw");
@@ -49,7 +41,7 @@ public class NTLogger extends GenericLogger {
         publisher.close(); 
     }
 
-    public static void add{{t.TypeName}}(String entryName, Supplier<{{t.java.Supplier}}> valueSupplier) {
+    public void add{{t.TypeName}}(String entryName, Supplier<{{t.java.Supplier}}> valueSupplier) {
         var topic = table.get{{t.TypeName}}Topic(entryName);
         {%if t.TypeName == 'Raw'%}
         var publisher = topic.publish("raw");
@@ -60,48 +52,58 @@ public class NTLogger extends GenericLogger {
     }
     {%endfor%}
 
-    // public static void put(String entryName, Translation2d value) {
+    // public void put(String entryName, Translation2d value) {
     //     var topic = table.getDoubleArrayTopic(entryName);
     //     topic.setRetained(true);
     //     var publisher = new Translation2dPublisher(topic);
     //     publisher.set(value);
     //     publisher.close();
     // }
-    public static void helper(Supplier<?> supplier, DataType type, String path, boolean oneShot) {
-        switch (type) {
-            {%for t in types%}
-            case {{t.TypeName}}:
-                if (oneShot) {
-                    NTLogger.put(path, ({{t.java.ValueType}}) supplier.get());
-                } else {
-                    NTLogger.add{{t.TypeName}}(path, () -> ({{t.java.ValueType}}) supplier.get());
-                }
-                break;
-            {%endfor%}
-            case Sendable:
-                NTLogger.addSendable(path, (Sendable) supplier.get());
-                break;
-            default:
-                throw new IllegalArgumentException("Invalid data type");
-        }
-    }
 
-    public static void addNetworkTable(NetworkTable table) {
+    public void addNetworkTable(NetworkTable table) {
         // NetworkTableInstance.getDefault()
         //     .startEntryDataLog(table, table.getPath(), table.getPath());
     }
 
-    public static void addNetworkTable(NetworkTable table, String dlPath) {
+    public void addNetworkTable(NetworkTable table, String dlPath) {
         // NetworkTableInstance.getDefault()
         //     .startEntryDataLog(table, table.getPath(), dlPath);
     }
 
-    public static void addSendable(String path, Sendable sendable) {        
+    public void addSendable(String path, Sendable sendable) {        
         var builder = new SendableBuilderImpl();
         builder.setTable(table.getTable(path));
         sendable.initSendable(builder);
         builder.startListeners();
         table.getTable(path).getEntry(".controllable").setBoolean(false);
         sendables.add(builder);
+    }
+
+    public void helper(Supplier<?> supplier, DataType type, String path, boolean oneShot) {
+        switch (type) {
+            {%for t in types%}
+            case {{t.TypeName}}:
+                if (oneShot) {
+                    put(path, ({{t.java.ValueType}}) supplier.get());
+                } else {
+                    add{{t.TypeName}}(path, () -> ({{t.java.ValueType}}) supplier.get());
+                }
+                break;
+            {%endfor%}
+            case Sendable:
+                addSendable(path, (Sendable) supplier.get());
+                break;
+            {%for t in geomTypes%}
+            case {{t.TypeName}}:
+                if (oneShot) {
+                    put(path, ({{t.TypeName}}) supplier.get());
+                } else {
+                    add{{t.TypeName}}(path, ()->({{t.TypeName}}) supplier.get());
+                }
+                break;
+            {%endfor%}
+            default:
+                throw new IllegalArgumentException("Invalid data type");
+        }
     }
 }

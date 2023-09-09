@@ -8,10 +8,13 @@ import java.util.ArrayList;
 
 import autolog.AutoLog;
 import autolog.Logged;
+import autolog.AutoLog.BothLog;
 import edu.wpi.first.math.filter.LinearFilter;
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import io.github.oblarg.oblog.Loggable;
 import io.github.oblarg.oblog.Logger;
 
@@ -25,19 +28,24 @@ public class Robot extends TimedRobot implements Logged, Loggable {
 
   int samples;
   boolean useOblog = false;
-  boolean dataLog = false;
+  boolean dataLog = true;
+  
   ArrayList<Internal> m_internals = new ArrayList<>(
   );
   private LinearFilter filter = LinearFilter.movingAverage(50);
   double totalOfAvgs = 0;
   double avgsTaken = 0;
   
+  @BothLog(path = "ThePose")
+  private Pose2d m_pose = new Pose2d();
   /**
    * This function is run when the robot is first started up and should be used for any
    * initialization code.
    */
   @Override
   public void robotInit() {
+    SmartDashboard.putBoolean("bool", true);
+    AutoLog.dataLogger.addNetworkTable(NetworkTableInstance.getDefault().getTable("SmartDashboard"));
     for (int i = 0; i < 100; i++) {
       m_internals.add(new Internal(i + ""));
     }
@@ -46,7 +54,7 @@ public class Robot extends TimedRobot implements Logged, Loggable {
     if (useOblog) {
       Logger.configureLoggingAndConfig(this, false);
     } else {
-      AutoLog.setupLoggableLogging(this, "Robot", true);
+      AutoLog.setupLogging(this, "Robot", true);
     }
   }
   @Override

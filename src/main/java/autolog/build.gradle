@@ -18,6 +18,7 @@ import com.hubspot.jinjava.JinjavaConfig;
 
 
 def ntcoreTypesInputFile = file("generate/types.json")
+def geomTypesInputFile = file("generate/geomTypes.json")
 def ntcoreJavaTypesInputDir = file("generate/java")
 def ntcoreJavaTypesOutputDir = file("generate/output")
 task ntcoreGenerateJavaTypes() {
@@ -25,12 +26,14 @@ task ntcoreGenerateJavaTypes() {
     group = "WPILib"
 
     inputs.file ntcoreTypesInputFile
+    inputs.file geomTypesInputFile
     inputs.dir ntcoreJavaTypesInputDir
     outputs.dir ntcoreJavaTypesOutputDir
 
     doLast {
         def jsonSlurper = new JsonSlurper()
         def jsonTypes = jsonSlurper.parse(ntcoreTypesInputFile)
+        def geomTypes = jsonSlurper.parse(geomTypesInputFile)
 
         ntcoreJavaTypesOutputDir.deleteDir()
         ntcoreJavaTypesOutputDir.mkdirs()
@@ -47,6 +50,7 @@ task ntcoreGenerateJavaTypes() {
                 || file.name.startsWith("DataType")) {
                 def replacements = new HashMap<String,?>()
                 replacements.put("types", jsonTypes)
+                replacements.put("geomTypes", geomTypes)
                 def output = jinjava.render(template, replacements)
                 new File(ntcoreJavaTypesOutputDir, outfn).write(output)
             }

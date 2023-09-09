@@ -2,6 +2,17 @@ package autolog.generate.output;
 
 
 import edu.wpi.first.math.geometry.Translation2d;
+
+import edu.wpi.first.math.geometry.Translation3d;
+
+import edu.wpi.first.math.geometry.Rotation2d;
+
+import edu.wpi.first.math.geometry.Rotation3d;
+
+import edu.wpi.first.math.geometry.Pose2d;
+
+import edu.wpi.first.math.geometry.Pose3d;
+
 import edu.wpi.first.util.sendable.Sendable;
 import edu.wpi.first.networktables.NTSendable;
 public  enum DataType {
@@ -27,6 +38,19 @@ public  enum DataType {
     DoubleArray(double[].class),
     
     StringArray(String[].class),
+    
+    
+    Translation2d(Translation2d.class),
+    
+    Translation3d(Translation3d.class),
+    
+    Rotation2d(Rotation2d.class),
+    
+    Rotation3d(Rotation3d.class),
+    
+    Pose2d(Pose2d.class),
+    
+    Pose3d(Pose3d.class),
     
     Sendable(Sendable.class);
     // Double(Double.class),
@@ -57,66 +81,91 @@ public  enum DataType {
         if (clazz.equals(Boolean.class)) {
         
             return Boolean;
-        } else
+        }
         
         
         if (clazz.equals(Long.class)) {
         
             return Integer;
-        } else
+        }
         
         
         if (clazz.equals(Float.class)) {
         
             return Float;
-        } else
+        }
         
         
         if (clazz.equals(Double.class)) {
         
             return Double;
-        } else
+        }
         
         
         if (clazz.equals(String.class)) {
         
             return String;
-        } else
+        }
         
         
-        if (clazz.equals(byte[].class)) {
+        if (clazz.equals(Byte[].class)) {
         
             return Raw;
-        } else
+        }
         
         
         if (clazz.equals(Boolean[].class)) {
         
             return BooleanArray;
-        } else
+        }
         
         
         if (clazz.equals(Long[].class)) {
         
             return IntegerArray;
-        } else
+        }
         
         
         if (clazz.equals(Float[].class)) {
         
             return FloatArray;
-        } else
+        }
         
         
         if (clazz.equals(Double[].class)) {
         
             return DoubleArray;
-        } else
+        }
         
         
         if (clazz.equals(String[].class)) {
         
             return StringArray;
+        }
+        
+        
+        if (clazz.equals(Translation2d.class)) {
+            return Translation2d;
+        } else
+        
+        if (clazz.equals(Translation3d.class)) {
+            return Translation3d;
+        } else
+        
+        if (clazz.equals(Rotation2d.class)) {
+            return Rotation2d;
+        } else
+        
+        if (clazz.equals(Rotation3d.class)) {
+            return Rotation3d;
+        } else
+        
+        if (clazz.equals(Pose2d.class)) {
+            return Pose2d;
+        } else
+        
+        if (clazz.equals(Pose3d.class)) {
+            return Pose3d;
         } else
         
         // if (clazz.equals(Float.class)) {
@@ -150,31 +199,149 @@ public  enum DataType {
     }
 
     private static Class<?> complexFromPrim(Class<?> clazz) {
-        if (clazz.equals(double.class)) {
-            return Double.class;
-        } else if (clazz.equals(float.class)) {
-            return Float.class;
-        } else if (clazz.equals(boolean.class)) {
+        // if (clazz.equals(double.class)) {
+        //     return Double.class;
+        // } else if (clazz.equals(float.class)) {
+        //     return Float.class;
+        // } else if (clazz.equals(boolean.class)) {
+        //     return Boolean.class;
+        // } else if (clazz.equals(String.class)) {
+        //     return String.class;
+        // } else if (clazz.equals(int.class)) {
+        //     return Integer.class;
+        // } else if (clazz.equals(byte[].class)) {
+        //     return Byte[].class;
+        // } else if (clazz.equals(double[].class)) {
+        //     return Double[].class;
+        // } else if (clazz.equals(float[].class)) {
+        //     return Float[].class;
+        // } else if (clazz.equals(boolean[].class)) {
+        //     return Boolean[].class;
+        // } else if (clazz.equals(String[].class)) {
+        //     return String[].class;
+        // } else if (clazz.equals(int[].class)) {
+        //     return Integer[].class;
+        // } else if (clazz.equals(Translation2d.class)) {
+        //     return Translation2d.class;
+        // } else {
+        //     return clazz;
+        // }
+
+        
+        
+        if (clazz.equals(boolean.class)) {
+
+        
             return Boolean.class;
-        } else if (clazz.equals(String.class)) {
+        
+        } else
+        
+        
+        if (clazz.equals(long.class)) {
+
+        
+            return Long.class;
+        
+        } else
+        
+        
+        if (clazz.equals(float.class)) {
+
+        
+            return Float.class;
+        
+        } else
+        
+        
+        if (clazz.equals(double.class)) {
+
+        
+            return Double.class;
+        
+        } else
+        
+        
+        if (clazz.equals(String.class)) {
+
+        
             return String.class;
-        } else if (clazz.equals(int.class)) {
-            return Integer.class;
-        } else if (clazz.equals(byte[].class)) {
+        
+        } else
+        
+        
+        if (clazz.equals(byte[].class)) {
+
+        
             return Byte[].class;
-        } else if (clazz.equals(double[].class)) {
-            return Double[].class;
-        } else if (clazz.equals(float[].class)) {
-            return Float[].class;
-        } else if (clazz.equals(boolean[].class)) {
+        
+        } else
+        
+        
+        if (clazz.equals(boolean[].class)) {
+
+        
             return Boolean[].class;
-        } else if (clazz.equals(String[].class)) {
+        
+        } else
+        
+        
+        if (clazz.equals(long[].class)) {
+
+        
+            return Long[].class;
+        
+        } else
+        
+        
+        if (clazz.equals(float[].class)) {
+
+        
+            return Float[].class;
+        
+        } else
+        
+        
+        if (clazz.equals(double[].class)) {
+
+        
+            return Double[].class;
+        
+        } else
+        
+        
+        if (clazz.equals(String[].class)) {
+
+        
             return String[].class;
-        } else if (clazz.equals(int[].class)) {
-            return Integer[].class;
-        } else if (clazz.equals(Translation2d.class)) {
+        
+        } else
+        
+        
+        if (clazz.equals(Translation2d.class)) {
             return Translation2d.class;
-        } else {
+        } else
+        
+        if (clazz.equals(Translation3d.class)) {
+            return Translation3d.class;
+        } else
+        
+        if (clazz.equals(Rotation2d.class)) {
+            return Rotation2d.class;
+        } else
+        
+        if (clazz.equals(Rotation3d.class)) {
+            return Rotation3d.class;
+        } else
+        
+        if (clazz.equals(Pose2d.class)) {
+            return Pose2d.class;
+        } else
+        
+        if (clazz.equals(Pose3d.class)) {
+            return Pose3d.class;
+        } else
+        
+        {
             return clazz;
         }
     }

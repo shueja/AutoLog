@@ -1,11 +1,8 @@
 package autolog.generate.output;
 
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Pose3d;
-import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Rotation3d;
-import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.geometry.Translation3d;
+{%for t in geomTypes%}
+import edu.wpi.first.math.geometry.{{t.TypeName}};
+{%endfor%}
 import edu.wpi.first.networktables.NTSendable;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
@@ -24,13 +21,8 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import autolog.logEntries.nt.Pose2dEntry;
-import autolog.logEntries.nt.Pose3dEntry;
-import autolog.logEntries.nt.Rotation2dEntry;
-import autolog.logEntries.nt.Rotation3dEntry;
-import autolog.logEntries.nt.Translation2dPublisher;
-import autolog.logEntries.nt.Translation3dEntry;
 import edu.wpi.first.wpilibj.Timer;
+import autolog.util.GeomPacker;
 
 public abstract class GenericLogger {
     public interface LogRunnable extends LongConsumer {
@@ -38,7 +30,7 @@ public abstract class GenericLogger {
     }
     protected GenericLogger() {}
 
-    protected static LogRunnable field(LongConsumer run, Runnable close) {
+    protected LogRunnable field(LongConsumer run, Runnable close) {
         return new LogRunnable() {
             @Override
             public void accept(long timestamp) {
@@ -50,16 +42,25 @@ public abstract class GenericLogger {
             }
         };
     }
-    protected static final Map<String, LogRunnable> map = new HashMap<>();
-    protected static final Collection<SendableBuilder> sendables = new LinkedHashSet<>();
+    protected final Map<String, LogRunnable> map = new HashMap<>();
+    protected final Collection<SendableBuilder> sendables = new LinkedHashSet<>();
 
     {%for t in types%}
-    public static void put(String entryName, {{t.java.ValueType}} value) {}
+    public void put(String entryName, {{t.java.ValueType}} value) {}
 
-    public static void add{{t.TypeName}}(String entryName, Supplier<{{t.java.Supplier}}> valueSupplier) {}
+    public void add{{t.TypeName}}(String entryName, Supplier<{{t.java.Supplier}}> valueSupplier) {}
     {%endfor%}
 
-    // public static void put(String entryName, Translation2d value) {
+    {%for t in geomTypes%}
+    public void put(String entryName, {{t.TypeName}} value) {
+        put(entryName, GeomPacker.pack(value));
+    }
+    public void add{{t.TypeName}}(String entryName, Supplier<{{t.TypeName}}> valueSupplier) {
+        addDoubleArray(entryName, ()->GeomPacker.pack(valueSupplier.get()));
+    }
+    {%endfor%}
+
+    // public void put(String entryName, Translation2d value) {
     //     var topic = table.getDoubleArrayTopic(entryName);
     //     topic.setRetained(true);
     //     var publisher = new Translation2dPublisher(topic);
@@ -67,11 +68,11 @@ public abstract class GenericLogger {
     //     publisher.close();
     // }
 
-    public static void addNetworkTable(NetworkTable table) {};
+    public void addNetworkTable(NetworkTable table) {};
 
-    public static void addNetworkTable(NetworkTable table, String dlPath) {};
+    public void addNetworkTable(NetworkTable table, String dlPath) {};
 
-    public static void addSendable(String pathPrefix, String name, Sendable sendable) {
+    public void addSendable(String pathPrefix, String name, Sendable sendable) {
         String prefix;
         if (!pathPrefix.endsWith("/")) {
             prefix = pathPrefix + "/" + name + "/";
@@ -81,11 +82,10 @@ public abstract class GenericLogger {
         addSendable(prefix, sendable);
     }
 
-    public static void addSendable(String path, Sendable sendable) {};
+    public void addSendable(String path, Sendable sendable) {};
 
-    public static void helper(Supplier<?> supplier, DataType type, String path, boolean oneShot) {};
 
-    public static void update() {
+    public void update() {
         long timestamp = (long) (Timer.getFPGATimestamp() * 1e6);
         for (Map.Entry<String, LogRunnable> entry : map.entrySet()) {
             var key = entry.getKey();

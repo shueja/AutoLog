@@ -14,6 +14,7 @@
     },
     "java": {
       "ValueType": "boolean",
+      "WrapValueType": "Boolean",
       "Supplier": "Boolean",
       "EmptyValue": "false",
       "ConsumerFunctionPackage": "edu.wpi.first.util.function",
@@ -47,6 +48,7 @@
     },
     "java": {
       "ValueType": "long",
+      "WrapValueType": "Long",
       "Supplier" : "Long",
       "EmptyValue": "0",
       "FunctionTypePrefix": "Long",
@@ -80,6 +82,7 @@
     },
     "java": {
       "ValueType": "float",
+      "WrapValueType": "Float",
       "EmptyValue": "0",
       "Supplier": "Float",
       "ConsumerFunctionPackage": "edu.wpi.first.util.function",
@@ -116,6 +119,7 @@
     },
     "java": {
       "Supplier": "Double",
+      "WrapValueType": "Double",
       "ValueType": "double",
       "EmptyValue": "0",
       "FunctionTypePrefix": "Double",
@@ -188,6 +192,7 @@
     },
     "java": {
       "Supplier": "byte[]",
+      "WrapValueType": "Byte[]",
       "ValueType": "byte[]",
       "EmptyValue": "new byte[] {}",
       "FunctionTypeSuffix": "<byte[]>",

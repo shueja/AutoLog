@@ -1,12 +1,16 @@
 package autolog.generate.output;
 
-
-import edu.wpi.first.math.geometry.Translation2d;
+{%for t in geomTypes%}
+import edu.wpi.first.math.geometry.{{t.TypeName}};
+{%endfor%}
 import edu.wpi.first.util.sendable.Sendable;
 import edu.wpi.first.networktables.NTSendable;
 public  enum DataType {
     {%for t in types%}
     {{t.TypeName}}({{t.java.Supplier}}.class),
+    {%endfor%}
+    {%for t in geomTypes%}
+    {{t.TypeName}}({{t.TypeName}}.class),
     {%endfor%}
     Sendable(Sendable.class);
     // Double(Double.class),
@@ -38,6 +42,11 @@ public  enum DataType {
         {%else%}
         if (clazz.equals({{t.java.Supplier}}.class)) {
         {%endif%}
+            return {{t.TypeName}};
+        }
+        {%endfor%}
+        {%for t in geomTypes%}
+        if (clazz.equals({{t.TypeName}}.class)) {
             return {{t.TypeName}};
         } else
         {%endfor%}
@@ -72,31 +81,51 @@ public  enum DataType {
     }
 
     private static Class<?> complexFromPrim(Class<?> clazz) {
-        if (clazz.equals(double.class)) {
-            return Double.class;
-        } else if (clazz.equals(float.class)) {
-            return Float.class;
-        } else if (clazz.equals(boolean.class)) {
-            return Boolean.class;
-        } else if (clazz.equals(String.class)) {
-            return String.class;
-        } else if (clazz.equals(int.class)) {
-            return Integer.class;
-        } else if (clazz.equals(byte[].class)) {
-            return Byte[].class;
-        } else if (clazz.equals(double[].class)) {
-            return Double[].class;
-        } else if (clazz.equals(float[].class)) {
-            return Float[].class;
-        } else if (clazz.equals(boolean[].class)) {
-            return Boolean[].class;
-        } else if (clazz.equals(String[].class)) {
-            return String[].class;
-        } else if (clazz.equals(int[].class)) {
-            return Integer[].class;
-        } else if (clazz.equals(Translation2d.class)) {
-            return Translation2d.class;
-        } else {
+        // if (clazz.equals(double.class)) {
+        //     return Double.class;
+        // } else if (clazz.equals(float.class)) {
+        //     return Float.class;
+        // } else if (clazz.equals(boolean.class)) {
+        //     return Boolean.class;
+        // } else if (clazz.equals(String.class)) {
+        //     return String.class;
+        // } else if (clazz.equals(int.class)) {
+        //     return Integer.class;
+        // } else if (clazz.equals(byte[].class)) {
+        //     return Byte[].class;
+        // } else if (clazz.equals(double[].class)) {
+        //     return Double[].class;
+        // } else if (clazz.equals(float[].class)) {
+        //     return Float[].class;
+        // } else if (clazz.equals(boolean[].class)) {
+        //     return Boolean[].class;
+        // } else if (clazz.equals(String[].class)) {
+        //     return String[].class;
+        // } else if (clazz.equals(int[].class)) {
+        //     return Integer[].class;
+        // } else if (clazz.equals(Translation2d.class)) {
+        //     return Translation2d.class;
+        // } else {
+        //     return clazz;
+        // }
+
+        {%for t in types%}
+        
+        if (clazz.equals({{t.java.ValueType}}.class)) {
+
+        {%if t.java.WrapValueType is defined%}
+            return {{t.java.WrapValueType}}.class;
+        {%else%}
+            return {{t.java.ValueType}}.class;
+        {%endif%}
+        } else
+        {%endfor%}
+        {%for t in geomTypes%}
+        if (clazz.equals({{t.TypeName}}.class)) {
+            return {{t.TypeName}}.class;
+        } else
+        {%endfor%}
+        {
             return clazz;
         }
     }

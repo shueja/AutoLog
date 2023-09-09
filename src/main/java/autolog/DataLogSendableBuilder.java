@@ -173,7 +173,7 @@ public class DataLogSendableBuilder implements NTSendableBuilder {
             return networkTable.get();
         } else {
             networkTable = Optional.of(rootTable.getSubTable(prefix));
-            NTLogger.addNetworkTable(networkTable.get(), prefix);
+            ///NTLogger.addNetworkTable(networkTable.get(), prefix);
             return networkTable.get();
         }
     }
