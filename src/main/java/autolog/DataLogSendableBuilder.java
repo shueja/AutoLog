@@ -13,7 +13,7 @@ import java.util.function.LongConsumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
-import autolog.generate.output.NTLogger;
+import autolog.NTLogger;
 import edu.wpi.first.networktables.NTSendableBuilder;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;

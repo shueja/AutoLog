@@ -10,9 +10,9 @@ import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.function.Supplier;
 
-import autolog.generate.output.DataLogger;
-import autolog.generate.output.DataType;
-import autolog.generate.output.NTLogger;
+import autolog.DataLogger;
+import autolog.DataType;
+import autolog.NTLogger;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.util.sendable.Sendable;
 

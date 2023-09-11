@@ -1,43 +1,21 @@
+buildscript {
+    repositories {
+        maven {
+            url = 'https://frcmaven.wpi.edu/artifactory/ex-mvn'
+        }
+    }
+    dependencies {
+        classpath 'com.hubspot.jinjava:jinjava:2.7.1'
+    }
+}
+
 plugins {
-    id "java"
+    id "java-library"
     id "edu.wpi.first.GradleRIO" version "2023.4.2"
 }
 
 sourceCompatibility = JavaVersion.VERSION_11
 targetCompatibility = JavaVersion.VERSION_11
-
-def ROBOT_MAIN_CLASS = "frc.robot.Main"
-
-// Define my targets (RoboRIO) and artifacts (deployable files)
-// This is added by GradleRIO's backing project DeployUtils.
-deploy {
-    targets {
-        roborio(getTargetTypeClass('RoboRIO')) {
-            // Team number is loaded either from the .wpilib/wpilib_preferences.json
-            // or from command line. If not found an exception will be thrown.
-            // You can use getTeamOrDefault(team) instead of getTeamNumber if you
-            // want to store a team number in this file.
-            team = project.frc.getTeamNumber()
-            debug = project.frc.getDebugOrDefault(false)
-
-            artifacts {
-                // First part is artifact name, 2nd is artifact type
-                // getTargetTypeClass is a shortcut to get the class type using a string
-
-                frcJava(getArtifactTypeClass('FRCJavaArtifact')) {
-                }
-
-                // Static files artifact
-                frcStaticFileDeploy(getArtifactTypeClass('FileTreeArtifact')) {
-                    files = project.fileTree('src/main/deploy')
-                    directory = '/home/lvuser/deploy'
-                }
-            }
-        }
-    }
-}
-
-def deployArtifact = deploy.targets.roborio.artifacts.frcJava
 
 // Set to true to use debug for JNI.
 wpi.java.debugJni = false
@@ -47,15 +25,9 @@ def includeDesktopSupport = true
 
 // Defining my dependencies. In this case, WPILib (+ friends), and vendor libraries.
 // Also defines JUnit 5.
+
 dependencies {
-    implementation wpi.java.deps.wpilib()
-    implementation wpi.java.vendor.java()
-
-    roborioDebug wpi.java.deps.wpilibJniDebug(wpi.platforms.roborio)
-    roborioDebug wpi.java.vendor.jniDebug(wpi.platforms.roborio)
-
-    roborioRelease wpi.java.deps.wpilibJniRelease(wpi.platforms.roborio)
-    roborioRelease wpi.java.vendor.jniRelease(wpi.platforms.roborio)
+    api wpi.java.deps.wpilib()
 
     nativeDebug wpi.java.deps.wpilibJniDebug(wpi.platforms.desktop)
     nativeDebug wpi.java.vendor.jniDebug(wpi.platforms.desktop)
@@ -75,30 +47,61 @@ dependencies {
 repositories {
   maven { url 'https://jitpack.io' }
 }
+
 test {
     useJUnitPlatform()
     systemProperty 'junit.jupiter.extensions.autodetection.enabled', 'true'
 }
 
-// Simulation configuration (e.g. environment variables).
-wpi.sim.addGui().defaultEnabled = true
-wpi.sim.addDriverstation()
-
-// Setting up my Jar File. In this case, adding all libraries into the main jar ('fat jar')
-// in order to make them all available at runtime. Also adding the manifest so WPILib
-// knows where to look for our Robot Class.
-jar {
-    from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
-    manifest edu.wpi.first.gradlerio.GradleRIOPlugin.javaManifest(ROBOT_MAIN_CLASS)
-    duplicatesStrategy = DuplicatesStrategy.INCLUDE
-}
-
-// Configure jar and deploy tasks
-deployArtifact.jarTask = jar
-wpi.java.configureExecutableTasks(jar)
-wpi.java.configureTestTasks(test)
-
 // Configure string concat to always inline compile
 tasks.withType(JavaCompile) {
     options.compilerArgs.add '-XDstringConcat=inline'
 }
+
+import groovy.json.JsonSlurper;
+import com.hubspot.jinjava.Jinjava;
+import com.hubspot.jinjava.JinjavaConfig;
+
+def autologTypesInputFile = file("src/generate/types.json")
+def geomTypesInputFile = file("src/generate/geomTypes.json")
+def autologJavaTypesInputDir = file("src/generate/java")
+def autologJavaTypesOutputDir = file("$buildDir/generated/main/java/autolog")
+task autologGenerateClasses() {
+    description = "Generates AutoLog Java classes"
+    group = "AutoLog"
+
+    inputs.file autologTypesInputFile
+    inputs.file geomTypesInputFile
+    inputs.dir autologJavaTypesInputDir
+    outputs.dir autologJavaTypesOutputDir
+
+    doLast {
+        def jsonSlurper = new JsonSlurper()
+        def jsonTypes = jsonSlurper.parse(autologTypesInputFile)
+        def geomTypes = jsonSlurper.parse(geomTypesInputFile)
+
+        autologJavaTypesOutputDir.deleteDir()
+        autologJavaTypesOutputDir.mkdirs()
+
+        def config = new JinjavaConfig()
+        def jinjava = new Jinjava(config)
+
+        autologJavaTypesInputDir.listFiles().each { File file ->
+            def template = file.text
+            def outfn = file.name.substring(0, file.name.length() - 6)
+            if (file.name.startsWith("NTLogger")
+                    || file.name.startsWith("DataLogger")
+                    || file.name.startsWith("GenericLogger")
+                    || file.name.startsWith("DataType")) {
+                def replacements = new HashMap<String,?>()
+                replacements.put("types", jsonTypes)
+                replacements.put("geomTypes", geomTypes)
+                def output = jinjava.render(template, replacements)
+                new File(autologJavaTypesOutputDir, outfn).write(output)
+            }
+        }
+    }
+}
+
+sourceSets.main.java.srcDir "${buildDir}/generated/main/java"
+compileJava.dependsOn(autologGenerateClasses)

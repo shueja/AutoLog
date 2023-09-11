@@ -1,9 +1,9 @@
 package frc.robot;
 
 import autolog.Logged;
-import autolog.AutoLog.AL.BothLog;
-import autolog.AutoLog.AL.DataLog;
-import autolog.AutoLog.AL.NTLog;
+import autolog.AutoLog.BothLog;
+import autolog.AutoLog.DataLog;
+import autolog.AutoLog.NTLog;
 import io.github.oblarg.oblog.Loggable;
 import io.github.oblarg.oblog.annotations.Log;
 
