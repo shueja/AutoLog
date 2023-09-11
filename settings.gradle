@@ -25,3 +25,5 @@ pluginManagement {
         }
     }
 }
+
+include 'dev-benchmark'
