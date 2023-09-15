@@ -22,18 +22,7 @@ deploy {
                 // First part is artifact name, 2nd is artifact type
                 // getTargetTypeClass is a shortcut to get the class type using a string
 
-                frcJava(getArtifactTypeClass('FRCJavaArtifact')) {
-                    gcType = 'other'
-                    jvmArgs << '-XX:+UseSerialGC'
-
-                    // Enable VisualVM connection
-                    jvmArgs << "-Dcom.sun.management.jmxremote=true"
-                    jvmArgs << "-Dcom.sun.management.jmxremote.port=1198"
-                    jvmArgs << "-Dcom.sun.management.jmxremote.local.only=false"
-                    jvmArgs << "-Dcom.sun.management.jmxremote.ssl=false"
-                    jvmArgs << "-Dcom.sun.management.jmxremote.authenticate=false"
-                    jvmArgs << "-Djava.rmi.server.hostname=roborio-1024-frc.local" // Replace XX.XX with team number
-                }
+                frcJava(getArtifactTypeClass('FRCJavaArtifact')) {}
 
                 // Static files artifact
                 frcStaticFileDeploy(getArtifactTypeClass('FileTreeArtifact')) {
@@ -98,7 +87,11 @@ wpi.sim.addDriverstation()
 // in order to make them all available at runtime. Also adding the manifest so WPILib
 // knows where to look for our Robot Class.
 jar {
-    from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
+    from {
+        configurations.runtimeClasspath.collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
+    }
     manifest edu.wpi.first.gradlerio.GradleRIOPlugin.javaManifest(ROBOT_MAIN_CLASS)
     duplicatesStrategy = DuplicatesStrategy.INCLUDE
     dependsOn project(':').jar
