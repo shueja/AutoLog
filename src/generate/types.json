@@ -49,7 +49,7 @@
     "java": {
       "ValueType": "long",
       "WrapValueType": "Long",
-      "Supplier" : "Long",
+      "Supplier": "Long",
       "EmptyValue": "0",
       "FunctionTypePrefix": "Long",
       "ToWrapObject": "Long.valueOf",
@@ -111,7 +111,6 @@
       "ParamType": "double"
     },
     "cpp": {
-
       "ValueType": "double",
       "ParamType": "double",
       "TemplateType": "double",
