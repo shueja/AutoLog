@@ -25,5 +25,5 @@ pluginManagement {
         }
     }
 }
-
+rootProject.name = "AutoLog"
 include 'dev-benchmark'
