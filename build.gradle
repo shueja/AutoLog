@@ -8,19 +8,21 @@ buildscript {
         classpath 'com.hubspot.jinjava:jinjava:2.7.1'
     }
 }
-publishing {
-    publications {
-        maven(MavenPublication) {
-            from components.java
-        }
-    }
-}
+
 
 plugins {
     id "maven-publish"
     id "java-library"
     id "edu.wpi.first.GradleRIO" version "2023.4.3"
     id 'com.diffplug.spotless' version '6.21.0' apply false
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            from components.java
+        }
+    }
 }
 
 sourceCompatibility = JavaVersion.VERSION_11
