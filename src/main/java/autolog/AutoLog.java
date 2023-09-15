@@ -9,7 +9,10 @@ import java.lang.annotation.Target;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.function.Supplier;
 
 public class AutoLog {
@@ -78,6 +81,7 @@ public class AutoLog {
         return field.get(loggable);
       } catch (IllegalArgumentException | IllegalAccessException e) {
         DriverStation.reportWarning(field.getName() + " supllier is erroring", false);
+        e.printStackTrace();
         return null;
       }
     };
@@ -95,17 +99,29 @@ public class AutoLog {
   }
 
   public static void setupLogging(Logged loggable, String rootPath, boolean createDataLog) {
+    System.out.println(rootPath);
     String ss_name = rootPath;
-    for (Field field : loggable.getClass().getDeclaredFields()) {
-
+    for (Field field : getInheritedPrivateFields(loggable.getClass())) {
+      
       field.setAccessible(true);
-      if (Logged.class.isAssignableFrom(field.getType())) {
+      if (isNull(field, loggable)) {
 
+        continue;
+      }
+      if (Logged.class.isAssignableFrom(field.getType())) {
+        System.out.println("found logged:" + field.getName());
         try {
+          String pathOverride = ((Logged) field.get(loggable)).getPath();
+          if (pathOverride.equals("")) {
+            pathOverride = field.getName();
+          } 
           AutoLog.setupLogging(
-              (Logged) field.get(loggable), ss_name + "/" + field.getName(), createDataLog);
+              (Logged) field.get(loggable), ss_name + "/" + pathOverride, createDataLog);
+          continue;
         } catch (IllegalArgumentException | IllegalAccessException e) {
           DriverStation.reportWarning(field.getName() + " supllier is erroring", false);
+          e.printStackTrace();
+          continue;
         }
       }
 
@@ -119,12 +135,18 @@ public class AutoLog {
           for (Object obj : (Object[]) field.get(loggable)) {
             if (obj instanceof Logged) {
               try {
+                String pathOverride = ((Logged) obj).getPath();
+                if (pathOverride.equals("")) {
+                  pathOverride = obj.getClass().getSimpleName();
+                } 
                 AutoLog.setupLogging(
                     (Logged) obj,
-                    ss_name + "/" + field.getName() + "/" + obj.getClass().getSimpleName(),
+                    ss_name + "/" + field.getName() + "/" + pathOverride,
                     createDataLog);
+                continue;
               } catch (IllegalArgumentException e) {
                 DriverStation.reportWarning(field.getName() + " supllier is erroring", false);
+                e.printStackTrace();
               }
             }
           }
@@ -135,15 +157,21 @@ public class AutoLog {
         // Handle collections similarly
       } else if (Collection.class.isAssignableFrom(field.getType())) {
         try {
+          int idx = 0;
           // Include all elements whose runtime class is Loggable
           for (Object obj : (Collection) field.get(loggable)) {
-
+            System.out.println(obj);
             if (obj instanceof Logged) {
               try {
+                String pathOverride = ((Logged) obj).getPath();
+                if (pathOverride.equals("")) {
+                  pathOverride = obj.getClass().getSimpleName() + "[" + idx++ + "]";
+                } 
                 AutoLog.setupLogging(
                     (Logged) obj,
-                    ss_name + "/" + field.getName() + "/" + ((Logged) obj).getPath(),
+                    ss_name + "/" + field.getName() + "/" + pathOverride,
                     createDataLog);
+                continue;
               } catch (IllegalArgumentException e) {
                 e.printStackTrace();
                 DriverStation.reportWarning(field.getName() + " supllier is erroring", true);
@@ -161,6 +189,12 @@ public class AutoLog {
       String annotationPath;
       boolean oneShot;
       String name = field.getName();
+      DataType type;
+      try{
+      type = DataType.fromClass(field.getType());
+      } catch (IllegalArgumentException e) {
+        continue;
+      }
       if ((field.isAnnotationPresent(DataLog.class) || field.isAnnotationPresent(BothLog.class))
           && createDataLog) {
         dataLogger.startLog();
@@ -175,7 +209,6 @@ public class AutoLog {
           oneShot = annotation.once();
         }
         String key = annotationPath.equals("") ? ss_name + "/" + name : annotationPath;
-        DataType type = DataType.fromClass(field.getType());
         if (type == DataType.Sendable) {
           dataLogger.addSendable(key, (Sendable) getSupplier(field, loggable).get());
         } else {
@@ -194,7 +227,6 @@ public class AutoLog {
           oneShot = annotation.once();
         }
         String key = annotationPath.equals("") ? ss_name + "/" + field.getName() : annotationPath;
-        DataType type = DataType.fromClass(field.getType());
         if (type == DataType.Sendable) {
           ntLogger.addSendable(key, (Sendable) getSupplier(field, loggable).get());
         } else {
@@ -203,7 +235,7 @@ public class AutoLog {
       }
     }
 
-    for (Method method : loggable.getClass().getDeclaredMethods()) {
+    for (Method method :getInheritedMethods(loggable.getClass())) {
       if ((method.isAnnotationPresent(DataLog.class) || method.isAnnotationPresent(BothLog.class))
           && createDataLog) {
         dataLogger.startLog();
@@ -263,5 +295,39 @@ public class AutoLog {
 
   public static void updateDataLog() {
     dataLogger.update();
+  }
+
+  private static boolean isNull(Field field, Object obj) {
+    field.setAccessible(true);
+    boolean isNull = true;
+    try {
+      isNull = field.get(obj) == null;
+    } catch (IllegalAccessException e) {
+      e.printStackTrace();
+    }
+    return isNull;
+  }
+
+  private static List<Field> getInheritedPrivateFields(Class<?> type) {
+    List<Field> result = new ArrayList<Field>();
+
+    Class<?> i = type;
+    while (i != null && i != Object.class) {
+        Collections.addAll(result, i.getDeclaredFields());
+        i = i.getSuperclass();
+    }
+
+    return result;
+}
+  private static List<Method> getInheritedMethods(Class<?> type) {
+    List<Method> result = new ArrayList<Method>();
+
+    Class<?> i = type;
+    while (i != null && i != Object.class) {
+        Collections.addAll(result, i.getDeclaredMethods());
+        i = i.getSuperclass();
+    }
+
+    return result;
   }
 }
