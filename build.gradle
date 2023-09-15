@@ -8,6 +8,13 @@ buildscript {
         classpath 'com.hubspot.jinjava:jinjava:2.7.1'
     }
 }
+publishing {
+    publications {
+        maven(MavenPublication) {
+            from components.java
+        }
+    }
+}
 
 plugins {
     id "maven-publish"
