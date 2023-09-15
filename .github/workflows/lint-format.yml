@@ -1,0 +1,11 @@
+name: Lint and Format
+on: [push, pull_request]
+
+jobs:
+  spotless:
+    name: Spotless
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+      - name: Check format with Spotless
+        run: ./gradlew spotlessCheck

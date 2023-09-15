@@ -1,6 +1,8 @@
 package autolog;
 
-
 public interface Logged {
-    public default String getPath() {return "";};
+  public default String getPath() {
+    return "";
+  }
+  ;
 }

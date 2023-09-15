@@ -1,0 +1,81 @@
+package autolog;
+
+
+{%for t in geomTypes%}
+import edu.wpi.first.math.geometry.{{t.TypeName}};
+{%endfor%}
+import edu.wpi.first.networktables.NetworkTable;
+import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.util.datalog.*;
+import edu.wpi.first.util.sendable.Sendable;
+import edu.wpi.first.wpilibj.DataLogManager;
+import autolog.DataLogSendableBuilder;
+import java.util.function.Supplier;
+import autolog.util.GeomPacker;
+
+public class DataLogger extends GenericLogger {
+    public DataLogger(){super();
+        DataLogManager.logNetworkTables(false);
+        log = DataLogManager.getLog();
+    };
+    private DataLog log;
+
+    {%for t in types%}
+    public void put(String entryName, {{t.java.ValueType}} value) {
+        new {{t.TypeName}}LogEntry(log, entryName).append(value);
+    }
+
+    public void add{{t.TypeName}}(String entryName, Supplier<{{t.java.Supplier}}> valueSupplier) {
+        var entry = new {{t.TypeName}}LogEntry(log, entryName);
+        map.put(entryName, field((timestamp)->entry.append(valueSupplier.get(), timestamp), ()->{}));
+    }
+    {%endfor%}
+
+    public void addNetworkTable(NetworkTable table) {
+        NetworkTableInstance.getDefault()
+            .startEntryDataLog(log, table.getPath(), table.getPath());
+    }
+
+    public void addNetworkTable(NetworkTable table, String dlPath) {
+        NetworkTableInstance.getDefault()
+            .startEntryDataLog(log, table.getPath(), dlPath);
+    }
+
+    public void addSendable(String path, Sendable sendable) {        
+        var builder = new DataLogSendableBuilder(path);
+        sendable.initSendable(builder);
+        sendables.add(builder);
+    }
+
+    public void startLog() {
+        log = DataLogManager.getLog();
+    }
+
+    public void helper(Supplier<?> supplier, DataType type, String path, boolean oneShot) {
+        switch (type) {
+            {%for t in types%}
+            case {{t.TypeName}}:
+                if (oneShot) {
+                    put(path, ({{t.java.ValueType}}) supplier.get());
+                } else {
+                    add{{t.TypeName}}(path, () -> ({{t.java.ValueType}}) supplier.get());
+                }
+                break;
+            {%endfor%}
+            case Sendable:
+                addSendable(path, (Sendable) supplier.get());
+                break;
+            {%for t in geomTypes%}
+            case {{t.TypeName}}:
+                if (oneShot) {
+                    put(path, ({{t.TypeName}}) supplier.get());
+                } else {
+                    add{{t.TypeName}}(path, ()->({{t.TypeName}}) supplier.get());
+                }
+                break;
+            {%endfor%}
+            default:
+                throw new IllegalArgumentException("Invalid data type");
+        }
+    }
+}
