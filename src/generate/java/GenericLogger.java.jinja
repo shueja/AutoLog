@@ -84,6 +84,20 @@ public abstract class GenericLogger {
 
     public void addSendable(String path, Sendable sendable) {};
 
+    public void addSendable(String pathPrefix, String name, NTSendable sendable) {
+        String prefix;
+        if (!pathPrefix.endsWith("/")) {
+            prefix = pathPrefix + "/" + name + "/";
+        } else {
+            prefix = pathPrefix + name + "/";
+        }
+        addSendable(prefix, sendable);
+    }
+
+    public void addSendable(String path, NTSendable sendable) {
+        addSendable(path, (Sendable) sendable);
+    };
+
 
     public void update() {
         long timestamp = (long) (Timer.getFPGATimestamp() * 1e6);

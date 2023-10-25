@@ -12,7 +12,8 @@ public  enum DataType {
     {%for t in geomTypes%}
     {{t.TypeName}}({{t.TypeName}}.class),
     {%endfor%}
-    Sendable(Sendable.class);
+    Sendable(Sendable.class),
+    NTSendable(NTSendable.class);
     // Double(Double.class),
     // Float(Float.class),
     // Boolean(Boolean.class),
@@ -29,9 +30,15 @@ public  enum DataType {
     }
 
     public static DataType fromClass(Class<?> clazz) throws IllegalArgumentException {
-        // if clazz has Sendable interace
+        // if clazz has NTSendable interface
         for (Class<?> cls : clazz.getInterfaces()) {
-            if (cls.equals(Sendable.class) || cls.equals(NTSendable.class)) {
+            if (cls.equals(NTSendable.class)) {
+                return NTSendable;
+            }
+        }
+        // if clazz does not have NTSendable, but does have Sendable
+        for (Class<?> cls : clazz.getInterfaces()) {
+            if (cls.equals(Sendable.class)) {
                 return Sendable;
             }
         }
@@ -73,7 +80,10 @@ public  enum DataType {
         // } else if (clazz.equals(Translation2d.class)) {
         //     return Translation2d;
         
-        /* } else */ if (Sendable.class.isAssignableFrom(clazz)) {
+        /* } else */ 
+        if (NTSendable.class.isAssignableFrom(clazz)) {
+            return NTSendable;
+        } else if (Sendable.class.isAssignableFrom(clazz)) {
             return Sendable;
         } else {
             throw new IllegalArgumentException("Invalid datatype");

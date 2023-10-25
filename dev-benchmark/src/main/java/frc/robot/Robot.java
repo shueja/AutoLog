@@ -6,12 +6,23 @@ package frc.robot;
 
 import autolog.AutoLog;
 import autolog.AutoLog.BothLog;
+import autolog.AutoLog.DataLog;
+import autolog.AutoLog.NTLog;
 import autolog.Logged;
 import edu.wpi.first.math.filter.LinearFilter;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.math.geometry.Transform2d;
+import edu.wpi.first.math.geometry.Transform3d;
+import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
+import edu.wpi.first.wpilibj.smartdashboard.Mechanism2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import io.github.oblarg.oblog.Loggable;
 import io.github.oblarg.oblog.Logger;
@@ -27,15 +38,23 @@ public class Robot extends TimedRobot implements Logged, Loggable {
 
   int samples;
   boolean useOblog = false;
-  boolean dataLog = true;
+  boolean dataLog = false;
 
   ArrayList<Internal> m_internals = new ArrayList<>();
   private LinearFilter filter = LinearFilter.movingAverage(50);
   double totalOfAvgs = 0;
   double avgsTaken = 0;
 
-  @BothLog(path = "ThePose")
-  private Pose2d m_pose = new Pose2d();
+  private Geometry m_geometry = new Geometry();
+
+  @NTLog
+  @DataLog
+  private Field2d field = new Field2d();
+
+  @BothLog
+  private Mechanism2d mech = new Mechanism2d(1, 1);
+  @BothLog
+  private double[] array = {0, 1, 2};
 
   /**
    * This function is run when the robot is first started up and should be used for any
@@ -46,9 +65,9 @@ public class Robot extends TimedRobot implements Logged, Loggable {
     SmartDashboard.putBoolean("bool", true);
     AutoLog.dataLogger.addNetworkTable(
         NetworkTableInstance.getDefault().getTable("SmartDashboard"));
-    for (int i = 0; i < 100; i++) {
-      m_internals.add(new Internal(i + ""));
-    }
+    // for (int i = 0; i < 100; i++) {
+    //   m_internals.add(new Internal(i + ""));
+    // }
     // DataLogManager.start();
     NetworkTableInstance.getDefault().getTopic("name").getGenericEntry();
     if (useOblog) {
@@ -64,8 +83,9 @@ public class Robot extends TimedRobot implements Logged, Loggable {
     if (useOblog) {
       Logger.updateEntries();
     } else {
-      if (dataLog) {
+      if (true) {
         AutoLog.updateDataLog();
+        AutoLog.updateNT();
       } else {
         AutoLog.updateNT();
       }
@@ -82,7 +102,8 @@ public class Robot extends TimedRobot implements Logged, Loggable {
       System.out.println("Final Result: Oblog:" + useOblog + " DataLog:" + dataLog);
       System.out.println(totalOfAvgs / avgsTaken);
     }
-    m_internals.forEach(Internal::update);
+    field.getRobotObject().setPose(new Pose2d(samples / 100.0, 0, new Rotation2d()));
+    //m_internals.forEach(Internal::update);
   }
 
   @Override

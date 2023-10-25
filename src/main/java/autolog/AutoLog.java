@@ -1,5 +1,6 @@
 package autolog;
 
+import edu.wpi.first.networktables.NTSendable;
 import edu.wpi.first.util.sendable.Sendable;
 import edu.wpi.first.wpilibj.DriverStation;
 import java.lang.annotation.ElementType;
@@ -45,8 +46,6 @@ public class AutoLog {
   @Retention(RetentionPolicy.RUNTIME)
   @Target({ElementType.FIELD, ElementType.METHOD})
   public @interface BothLog {
-    public String path() default "";
-
     public boolean once() default false;
   }
 
@@ -61,16 +60,12 @@ public class AutoLog {
   @Retention(RetentionPolicy.RUNTIME)
   @Target({ElementType.FIELD, ElementType.METHOD})
   public @interface DataLog {
-    public String path() default "";
-
     public boolean once() default false;
   }
 
   @Retention(RetentionPolicy.RUNTIME)
   @Target({ElementType.FIELD, ElementType.METHOD})
   public @interface NTLog {
-    public String path() default "";
-
     public boolean once() default false;
   }
 
@@ -108,13 +103,14 @@ public class AutoLog {
 
         continue;
       }
+      // if the field is of type Logged
       if (Logged.class.isAssignableFrom(field.getType())) {
-        System.out.println("found logged:" + field.getName());
         try {
           String pathOverride = ((Logged) field.get(loggable)).getPath();
           if (pathOverride.equals("")) {
             pathOverride = field.getName();
           } 
+          // recursion for the Logged field
           AutoLog.setupLogging(
               (Logged) field.get(loggable), ss_name + "/" + pathOverride, createDataLog);
           continue;
@@ -127,10 +123,9 @@ public class AutoLog {
 
       if (field.getType().isArray()) {
         try {
-          // Skip if primitive array
-          if (!Object.class.isAssignableFrom(field.get(loggable).getClass().getComponentType())) {
-            continue;
-          }
+          // If primitive array
+          if (Object.class.isAssignableFrom(field.get(loggable).getClass().getComponentType())) {
+
           // Include all elements whose runtime class is Loggable
           for (Object obj : (Object[]) field.get(loggable)) {
             if (obj instanceof Logged) {
@@ -150,6 +145,7 @@ public class AutoLog {
               }
             }
           }
+        }
         } catch (IllegalAccessException e) {
           e.printStackTrace();
         }
@@ -186,7 +182,6 @@ public class AutoLog {
         continue;
       }
       // setup the annotation.
-      String annotationPath;
       boolean oneShot;
       String name = field.getName();
       DataType type;
@@ -202,14 +197,14 @@ public class AutoLog {
         DataLog annotation = field.getAnnotation(DataLog.class);
         if (annotation == null) {
           BothLog logAnnotation = field.getAnnotation(BothLog.class);
-          annotationPath = logAnnotation.path();
           oneShot = logAnnotation.once();
         } else {
-          annotationPath = annotation.path();
           oneShot = annotation.once();
         }
-        String key = annotationPath.equals("") ? ss_name + "/" + name : annotationPath;
-        if (type == DataType.Sendable) {
+        String key = ss_name + "/" + name;
+        if (type == DataType.NTSendable) {
+          dataLogger.addSendable(key, (NTSendable) getSupplier(field, loggable).get());
+        } else if (type == DataType.Sendable) {
           dataLogger.addSendable(key, (Sendable) getSupplier(field, loggable).get());
         } else {
           dataLogger.helper(getSupplier(field, loggable), type, key, oneShot);
@@ -220,14 +215,12 @@ public class AutoLog {
         NTLog annotation = field.getAnnotation(NTLog.class);
         if (annotation == null) {
           BothLog logAnnotation = field.getAnnotation(BothLog.class);
-          annotationPath = logAnnotation.path();
           oneShot = logAnnotation.once();
         } else {
-          annotationPath = annotation.path();
           oneShot = annotation.once();
         }
-        String key = annotationPath.equals("") ? ss_name + "/" + field.getName() : annotationPath;
-        if (type == DataType.Sendable) {
+        String key = ss_name + "/" + field.getName();
+        if (type == DataType.Sendable || type == DataType.NTSendable) {
           ntLogger.addSendable(key, (Sendable) getSupplier(field, loggable).get());
         } else {
           ntLogger.helper(getSupplier(field, loggable), type, key, oneShot);
@@ -240,20 +233,17 @@ public class AutoLog {
           && createDataLog) {
         dataLogger.startLog();
         method.setAccessible(true);
-        String annotationPath;
         boolean oneShot;
 
         DataLog annotation = method.getAnnotation(DataLog.class);
         if (annotation == null) {
           BothLog logAnnotation = method.getAnnotation(BothLog.class);
-          annotationPath = logAnnotation.path();
           oneShot = logAnnotation.once();
         } else {
-          annotationPath = annotation.path();
           oneShot = annotation.once();
         }
         String name = method.getName(); // methodNameFix(method.getName());
-        String path = annotationPath.equals("") ? ss_name + "/" + name : annotationPath;
+        String path = ss_name + "/" + name;
         DataType type = DataType.fromClass(method.getReturnType());
         if (method.getParameterCount() > 0) {
           throw new IllegalArgumentException("Cannot have parameters on a DataLog method");
@@ -262,19 +252,16 @@ public class AutoLog {
       }
       if (method.isAnnotationPresent(NTLog.class) || method.isAnnotationPresent(BothLog.class)) {
         method.setAccessible(true);
-        String annotationPath;
         boolean oneShot;
 
         NTLog annotation = method.getAnnotation(NTLog.class);
         if (annotation == null) {
           BothLog logAnnotation = method.getAnnotation(BothLog.class);
-          annotationPath = logAnnotation.path();
           oneShot = logAnnotation.once();
         } else {
-          annotationPath = annotation.path();
           oneShot = annotation.once();
         }
-        String key = annotationPath.equals("") ? ss_name + "/" + method.getName() : annotationPath;
+        String key = ss_name + "/" + method.getName();
         DataType type = DataType.fromClass(method.getReturnType());
         if (method.getParameterCount() > 0) {
           throw new IllegalArgumentException("Cannot have parameters on a DataLog method");

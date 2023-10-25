@@ -16,5 +16,11 @@
   },
   {
     "TypeName": "Pose3d"
+  },
+  {
+    "TypeName": "Transform2d"
+  },
+  {
+    "TypeName": "Transform3d"
   }
 ]
