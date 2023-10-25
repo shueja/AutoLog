@@ -97,7 +97,7 @@ public class AutoLog {
     System.out.println(rootPath);
     String ss_name = rootPath;
     for (Field field : getInheritedPrivateFields(loggable.getClass())) {
-      
+
       field.setAccessible(true);
       if (isNull(field, loggable)) {
 
@@ -109,7 +109,7 @@ public class AutoLog {
           String pathOverride = ((Logged) field.get(loggable)).getPath();
           if (pathOverride.equals("")) {
             pathOverride = field.getName();
-          } 
+          }
           // recursion for the Logged field
           AutoLog.setupLogging(
               (Logged) field.get(loggable), ss_name + "/" + pathOverride, createDataLog);
@@ -126,26 +126,26 @@ public class AutoLog {
           // If primitive array
           if (Object.class.isAssignableFrom(field.get(loggable).getClass().getComponentType())) {
 
-          // Include all elements whose runtime class is Loggable
-          for (Object obj : (Object[]) field.get(loggable)) {
-            if (obj instanceof Logged) {
-              try {
-                String pathOverride = ((Logged) obj).getPath();
-                if (pathOverride.equals("")) {
-                  pathOverride = obj.getClass().getSimpleName();
-                } 
-                AutoLog.setupLogging(
-                    (Logged) obj,
-                    ss_name + "/" + field.getName() + "/" + pathOverride,
-                    createDataLog);
-                continue;
-              } catch (IllegalArgumentException e) {
-                DriverStation.reportWarning(field.getName() + " supllier is erroring", false);
-                e.printStackTrace();
+            // Include all elements whose runtime class is Loggable
+            for (Object obj : (Object[]) field.get(loggable)) {
+              if (obj instanceof Logged) {
+                try {
+                  String pathOverride = ((Logged) obj).getPath();
+                  if (pathOverride.equals("")) {
+                    pathOverride = obj.getClass().getSimpleName();
+                  }
+                  AutoLog.setupLogging(
+                      (Logged) obj,
+                      ss_name + "/" + field.getName() + "/" + pathOverride,
+                      createDataLog);
+                  continue;
+                } catch (IllegalArgumentException e) {
+                  DriverStation.reportWarning(field.getName() + " supllier is erroring", false);
+                  e.printStackTrace();
+                }
               }
             }
           }
-        }
         } catch (IllegalAccessException e) {
           e.printStackTrace();
         }
@@ -162,7 +162,7 @@ public class AutoLog {
                 String pathOverride = ((Logged) obj).getPath();
                 if (pathOverride.equals("")) {
                   pathOverride = obj.getClass().getSimpleName() + "[" + idx++ + "]";
-                } 
+                }
                 AutoLog.setupLogging(
                     (Logged) obj,
                     ss_name + "/" + field.getName() + "/" + pathOverride,
@@ -185,8 +185,8 @@ public class AutoLog {
       boolean oneShot;
       String name = field.getName();
       DataType type;
-      try{
-      type = DataType.fromClass(field.getType());
+      try {
+        type = DataType.fromClass(field.getType());
       } catch (IllegalArgumentException e) {
         continue;
       }
@@ -228,7 +228,7 @@ public class AutoLog {
       }
     }
 
-    for (Method method :getInheritedMethods(loggable.getClass())) {
+    for (Method method : getInheritedMethods(loggable.getClass())) {
       if ((method.isAnnotationPresent(DataLog.class) || method.isAnnotationPresent(BothLog.class))
           && createDataLog) {
         dataLogger.startLog();
@@ -300,19 +300,20 @@ public class AutoLog {
 
     Class<?> i = type;
     while (i != null && i != Object.class) {
-        Collections.addAll(result, i.getDeclaredFields());
-        i = i.getSuperclass();
+      Collections.addAll(result, i.getDeclaredFields());
+      i = i.getSuperclass();
     }
 
     return result;
-}
+  }
+
   private static List<Method> getInheritedMethods(Class<?> type) {
     List<Method> result = new ArrayList<Method>();
 
     Class<?> i = type;
     while (i != null && i != Object.class) {
-        Collections.addAll(result, i.getDeclaredMethods());
-        i = i.getSuperclass();
+      Collections.addAll(result, i.getDeclaredMethods());
+      i = i.getSuperclass();
     }
 
     return result;
