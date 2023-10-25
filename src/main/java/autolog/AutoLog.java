@@ -46,6 +46,8 @@ public class AutoLog {
   @Retention(RetentionPolicy.RUNTIME)
   @Target({ElementType.FIELD, ElementType.METHOD})
   public @interface BothLog {
+    public String path() default "";
+
     public boolean once() default false;
   }
 
@@ -97,7 +99,7 @@ public class AutoLog {
     System.out.println(rootPath);
     String ss_name = rootPath;
     for (Field field : getInheritedPrivateFields(loggable.getClass())) {
-
+      
       field.setAccessible(true);
       if (isNull(field, loggable)) {
 
@@ -109,7 +111,7 @@ public class AutoLog {
           String pathOverride = ((Logged) field.get(loggable)).getPath();
           if (pathOverride.equals("")) {
             pathOverride = field.getName();
-          }
+          } 
           // recursion for the Logged field
           AutoLog.setupLogging(
               (Logged) field.get(loggable), ss_name + "/" + pathOverride, createDataLog);
@@ -126,26 +128,26 @@ public class AutoLog {
           // If primitive array
           if (Object.class.isAssignableFrom(field.get(loggable).getClass().getComponentType())) {
 
-            // Include all elements whose runtime class is Loggable
-            for (Object obj : (Object[]) field.get(loggable)) {
-              if (obj instanceof Logged) {
-                try {
-                  String pathOverride = ((Logged) obj).getPath();
-                  if (pathOverride.equals("")) {
-                    pathOverride = obj.getClass().getSimpleName();
-                  }
-                  AutoLog.setupLogging(
-                      (Logged) obj,
-                      ss_name + "/" + field.getName() + "/" + pathOverride,
-                      createDataLog);
-                  continue;
-                } catch (IllegalArgumentException e) {
-                  DriverStation.reportWarning(field.getName() + " supllier is erroring", false);
-                  e.printStackTrace();
-                }
+          // Include all elements whose runtime class is Loggable
+          for (Object obj : (Object[]) field.get(loggable)) {
+            if (obj instanceof Logged) {
+              try {
+                String pathOverride = ((Logged) obj).getPath();
+                if (pathOverride.equals("")) {
+                  pathOverride = obj.getClass().getSimpleName();
+                } 
+                AutoLog.setupLogging(
+                    (Logged) obj,
+                    ss_name + "/" + field.getName() + "/" + pathOverride,
+                    createDataLog);
+                continue;
+              } catch (IllegalArgumentException e) {
+                DriverStation.reportWarning(field.getName() + " supllier is erroring", false);
+                e.printStackTrace();
               }
             }
           }
+        }
         } catch (IllegalAccessException e) {
           e.printStackTrace();
         }
@@ -162,7 +164,7 @@ public class AutoLog {
                 String pathOverride = ((Logged) obj).getPath();
                 if (pathOverride.equals("")) {
                   pathOverride = obj.getClass().getSimpleName() + "[" + idx++ + "]";
-                }
+                } 
                 AutoLog.setupLogging(
                     (Logged) obj,
                     ss_name + "/" + field.getName() + "/" + pathOverride,
@@ -182,11 +184,12 @@ public class AutoLog {
         continue;
       }
       // setup the annotation.
+      String annotationPath = "";
       boolean oneShot;
       String name = field.getName();
       DataType type;
-      try {
-        type = DataType.fromClass(field.getType());
+      try{
+      type = DataType.fromClass(field.getType());
       } catch (IllegalArgumentException e) {
         continue;
       }
@@ -197,11 +200,12 @@ public class AutoLog {
         DataLog annotation = field.getAnnotation(DataLog.class);
         if (annotation == null) {
           BothLog logAnnotation = field.getAnnotation(BothLog.class);
+          annotationPath = logAnnotation.path();
           oneShot = logAnnotation.once();
         } else {
           oneShot = annotation.once();
         }
-        String key = ss_name + "/" + name;
+        String key = annotationPath.equals("") ? ss_name + "/" + name : annotationPath;
         if (type == DataType.NTSendable) {
           dataLogger.addSendable(key, (NTSendable) getSupplier(field, loggable).get());
         } else if (type == DataType.Sendable) {
@@ -215,11 +219,13 @@ public class AutoLog {
         NTLog annotation = field.getAnnotation(NTLog.class);
         if (annotation == null) {
           BothLog logAnnotation = field.getAnnotation(BothLog.class);
+          annotationPath = logAnnotation.path();
           oneShot = logAnnotation.once();
         } else {
+
           oneShot = annotation.once();
         }
-        String key = ss_name + "/" + field.getName();
+        String key = annotationPath.equals("") ? ss_name + "/" + field.getName() : annotationPath;
         if (type == DataType.Sendable || type == DataType.NTSendable) {
           ntLogger.addSendable(key, (Sendable) getSupplier(field, loggable).get());
         } else {
@@ -228,22 +234,24 @@ public class AutoLog {
       }
     }
 
-    for (Method method : getInheritedMethods(loggable.getClass())) {
+    for (Method method :getInheritedMethods(loggable.getClass())) {
       if ((method.isAnnotationPresent(DataLog.class) || method.isAnnotationPresent(BothLog.class))
           && createDataLog) {
         dataLogger.startLog();
         method.setAccessible(true);
+        String annotationPath = "";
         boolean oneShot;
 
         DataLog annotation = method.getAnnotation(DataLog.class);
         if (annotation == null) {
           BothLog logAnnotation = method.getAnnotation(BothLog.class);
+          annotationPath = logAnnotation.path();
           oneShot = logAnnotation.once();
         } else {
           oneShot = annotation.once();
         }
         String name = method.getName(); // methodNameFix(method.getName());
-        String path = ss_name + "/" + name;
+        String path = annotationPath.equals("") ? ss_name + "/" + name : annotationPath;
         DataType type = DataType.fromClass(method.getReturnType());
         if (method.getParameterCount() > 0) {
           throw new IllegalArgumentException("Cannot have parameters on a DataLog method");
@@ -252,16 +260,18 @@ public class AutoLog {
       }
       if (method.isAnnotationPresent(NTLog.class) || method.isAnnotationPresent(BothLog.class)) {
         method.setAccessible(true);
+        String annotationPath = "";
         boolean oneShot;
 
         NTLog annotation = method.getAnnotation(NTLog.class);
         if (annotation == null) {
           BothLog logAnnotation = method.getAnnotation(BothLog.class);
+          annotationPath = logAnnotation.path();
           oneShot = logAnnotation.once();
         } else {
           oneShot = annotation.once();
         }
-        String key = ss_name + "/" + method.getName();
+        String key = annotationPath.equals("") ? ss_name + "/" + method.getName() : annotationPath;
         DataType type = DataType.fromClass(method.getReturnType());
         if (method.getParameterCount() > 0) {
           throw new IllegalArgumentException("Cannot have parameters on a DataLog method");
@@ -300,20 +310,19 @@ public class AutoLog {
 
     Class<?> i = type;
     while (i != null && i != Object.class) {
-      Collections.addAll(result, i.getDeclaredFields());
-      i = i.getSuperclass();
+        Collections.addAll(result, i.getDeclaredFields());
+        i = i.getSuperclass();
     }
 
     return result;
-  }
-
+}
   private static List<Method> getInheritedMethods(Class<?> type) {
     List<Method> result = new ArrayList<Method>();
 
     Class<?> i = type;
     while (i != null && i != Object.class) {
-      Collections.addAll(result, i.getDeclaredMethods());
-      i = i.getSuperclass();
+        Collections.addAll(result, i.getDeclaredMethods());
+        i = i.getSuperclass();
     }
 
     return result;
