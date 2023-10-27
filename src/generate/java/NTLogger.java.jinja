@@ -41,14 +41,18 @@ public class NTLogger extends GenericLogger {
         publisher.close(); 
     }
 
-    public void add{{t.TypeName}}(String entryName, Supplier<{{t.java.Supplier}}> valueSupplier) {
+    public void add{{t.TypeName}}(String entryName, Supplier<{{t.java.Supplier}}> valueSupplier, int level) {
         var topic = table.get{{t.TypeName}}Topic(entryName);
         {%if t.TypeName == 'Raw'%}
         var publisher = topic.publish("raw");
         {%else%}
         var publisher = topic.publish();
         {%endif%}
-        map.put(entryName, field((timestamp)->publisher.set(valueSupplier.get(), timestamp), publisher::close));
+        map.put(entryName, field((timestamp)->publisher.set(valueSupplier.get(), timestamp), publisher::close, level));
+    }
+
+    public void add{{t.TypeName}}(String entryName, Supplier<{{t.java.Supplier}}> valueSupplier) {
+        add{{t.TypeName}}(entryName, valueSupplier, 0);
     }
     {%endfor%}
 
@@ -79,14 +83,14 @@ public class NTLogger extends GenericLogger {
         sendables.add(builder);
     }
 
-    public void helper(Supplier<?> supplier, DataType type, String path, boolean oneShot) {
+    public void helper(Supplier<?> supplier, DataType type, String path, boolean oneShot, int level) {
         switch (type) {
             {%for t in types%}
             case {{t.TypeName}}:
                 if (oneShot) {
                     put(path, ({{t.java.ValueType}}) supplier.get());
                 } else {
-                    add{{t.TypeName}}(path, () -> ({{t.java.ValueType}}) supplier.get());
+                    add{{t.TypeName}}(path, () -> ({{t.java.ValueType}}) supplier.get(), level);
                 }
                 break;
             {%endfor%}
@@ -98,7 +102,7 @@ public class NTLogger extends GenericLogger {
                 if (oneShot) {
                     put(path, ({{t.TypeName}}) supplier.get());
                 } else {
-                    add{{t.TypeName}}(path, ()->({{t.TypeName}}) supplier.get());
+                    add{{t.TypeName}}(path, ()->({{t.TypeName}}) supplier.get(), level);
                 }
                 break;
             {%endfor%}

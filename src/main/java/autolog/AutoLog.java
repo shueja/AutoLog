@@ -49,6 +49,8 @@ public class AutoLog {
     public String path() default "";
 
     public boolean once() default false;
+
+    public int level() default 0;
   }
 
   /**
@@ -63,12 +65,16 @@ public class AutoLog {
   @Target({ElementType.FIELD, ElementType.METHOD})
   public @interface DataLog {
     public boolean once() default false;
+
+    public int level() default 0;
   }
 
   @Retention(RetentionPolicy.RUNTIME)
   @Target({ElementType.FIELD, ElementType.METHOD})
   public @interface NTLog {
     public boolean once() default false;
+
+    public int level() default 0;
   }
 
   private static Supplier<?> getSupplier(Field field, Logged loggable) {
@@ -186,6 +192,7 @@ public class AutoLog {
       // setup the annotation.
       String annotationPath = "";
       boolean oneShot;
+      int level;
       String name = field.getName();
       DataType type;
       try{
@@ -202,8 +209,10 @@ public class AutoLog {
           BothLog logAnnotation = field.getAnnotation(BothLog.class);
           annotationPath = logAnnotation.path();
           oneShot = logAnnotation.once();
+          level = logAnnotation.level();
         } else {
           oneShot = annotation.once();
+          level = annotation.level();
         }
         String key = annotationPath.equals("") ? ss_name + "/" + name : annotationPath;
         if (type == DataType.NTSendable) {
@@ -211,7 +220,7 @@ public class AutoLog {
         } else if (type == DataType.Sendable) {
           dataLogger.addSendable(key, (Sendable) getSupplier(field, loggable).get());
         } else {
-          dataLogger.helper(getSupplier(field, loggable), type, key, oneShot);
+          dataLogger.helper(getSupplier(field, loggable), type, key, oneShot, level);
         }
       }
       if (field.isAnnotationPresent(NTLog.class) || field.isAnnotationPresent(BothLog.class)) {
@@ -221,15 +230,17 @@ public class AutoLog {
           BothLog logAnnotation = field.getAnnotation(BothLog.class);
           annotationPath = logAnnotation.path();
           oneShot = logAnnotation.once();
+          level = logAnnotation.level();
         } else {
 
           oneShot = annotation.once();
+          level = annotation.level();
         }
         String key = annotationPath.equals("") ? ss_name + "/" + field.getName() : annotationPath;
         if (type == DataType.Sendable || type == DataType.NTSendable) {
           ntLogger.addSendable(key, (Sendable) getSupplier(field, loggable).get());
         } else {
-          ntLogger.helper(getSupplier(field, loggable), type, key, oneShot);
+          ntLogger.helper(getSupplier(field, loggable), type, key, oneShot, level);
         }
       }
     }
@@ -241,42 +252,47 @@ public class AutoLog {
         method.setAccessible(true);
         String annotationPath = "";
         boolean oneShot;
-
+        int level;
         DataLog annotation = method.getAnnotation(DataLog.class);
         if (annotation == null) {
           BothLog logAnnotation = method.getAnnotation(BothLog.class);
           annotationPath = logAnnotation.path();
           oneShot = logAnnotation.once();
+          level = logAnnotation.level();
         } else {
           oneShot = annotation.once();
+          level = annotation.level();
         }
         String name = method.getName(); // methodNameFix(method.getName());
         String path = annotationPath.equals("") ? ss_name + "/" + name : annotationPath;
+        
         DataType type = DataType.fromClass(method.getReturnType());
         if (method.getParameterCount() > 0) {
           throw new IllegalArgumentException("Cannot have parameters on a DataLog method");
         }
-        dataLogger.helper(getSupplier(method, loggable), type, path, oneShot);
+        dataLogger.helper(getSupplier(method, loggable), type, path, oneShot, level);
       }
       if (method.isAnnotationPresent(NTLog.class) || method.isAnnotationPresent(BothLog.class)) {
         method.setAccessible(true);
         String annotationPath = "";
         boolean oneShot;
-
+        int level;
         NTLog annotation = method.getAnnotation(NTLog.class);
         if (annotation == null) {
           BothLog logAnnotation = method.getAnnotation(BothLog.class);
           annotationPath = logAnnotation.path();
           oneShot = logAnnotation.once();
+          level = logAnnotation.level();
         } else {
           oneShot = annotation.once();
+          level = annotation.level();
         }
         String key = annotationPath.equals("") ? ss_name + "/" + method.getName() : annotationPath;
         DataType type = DataType.fromClass(method.getReturnType());
         if (method.getParameterCount() > 0) {
           throw new IllegalArgumentException("Cannot have parameters on a DataLog method");
         }
-        ntLogger.helper(getSupplier(method, loggable), type, key, oneShot);
+        ntLogger.helper(getSupplier(method, loggable), type, key, oneShot, level);
       }
     }
   }

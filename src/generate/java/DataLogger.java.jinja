@@ -27,9 +27,13 @@ public class DataLogger extends GenericLogger {
         new {{t.TypeName}}LogEntry(log, entryName).append(value);
     }
 
-    public void add{{t.TypeName}}(String entryName, Supplier<{{t.java.Supplier}}> valueSupplier) {
+    public void add{{t.TypeName}}(String entryName, Supplier<{{t.java.Supplier}}> valueSupplier, int level) {
         var entry = new {{t.TypeName}}LogEntry(log, entryName);
         map.put(entryName, field((timestamp)->entry.append(valueSupplier.get(), timestamp), ()->{}));
+    }
+
+    public void add{{t.TypeName}}(String entryName, Supplier<{{t.java.Supplier}}> valueSupplier) {
+        add{{t.TypeName}}(entryName, valueSupplier, 0);
     }
     {%endfor%}
 
@@ -66,14 +70,14 @@ public class DataLogger extends GenericLogger {
         log = DataLogManager.getLog();
     }
 
-    public void helper(Supplier<?> supplier, DataType type, String path, boolean oneShot) {
+    public void helper(Supplier<?> supplier, DataType type, String path, boolean oneShot, int level) {
         switch (type) {
             {%for t in types%}
             case {{t.TypeName}}:
                 if (oneShot) {
                     put(path, ({{t.java.ValueType}}) supplier.get());
                 } else {
-                    add{{t.TypeName}}(path, () -> ({{t.java.ValueType}}) supplier.get());
+                    add{{t.TypeName}}(path, () -> ({{t.java.ValueType}}) supplier.get(), level);
                 }
                 break;
             {%endfor%}
@@ -85,7 +89,7 @@ public class DataLogger extends GenericLogger {
                 if (oneShot) {
                     put(path, ({{t.TypeName}}) supplier.get());
                 } else {
-                    add{{t.TypeName}}(path, ()->({{t.TypeName}}) supplier.get());
+                    add{{t.TypeName}}(path, ()->({{t.TypeName}}) supplier.get(), level);
                 }
                 break;
             {%endfor%}
